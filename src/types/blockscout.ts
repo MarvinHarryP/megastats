@@ -47,3 +47,19 @@ export interface BlockscoutAddress {
   coin_balance: string | null;
   transaction_count: number;
 }
+
+export interface BlockscoutTokenHolding {
+  token: {
+    symbol: string;
+    name: string;
+    decimals: string | null;
+    exchange_rate: string | null;
+    address: string;
+  };
+  value: string;
+}
+
+export interface BlockscoutTokenHoldingsResponse {
+  items: BlockscoutTokenHolding[];
+  next_page_params: Record<string, string | number> | null;
+}

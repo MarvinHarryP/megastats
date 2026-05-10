@@ -13,6 +13,7 @@ import { RefreshButton } from "@/components/shared/RefreshButton";
 import { CopyButton } from "@/components/shared/CopyButton";
 import { ExternalLink } from "lucide-react";
 import { DashboardClient } from "./DashboardClient";
+import { BalanceCard } from "@/components/stats/BalanceCard";
 
 interface Props {
   params: { address: string };
@@ -85,7 +86,12 @@ export default async function AddressPage({ params }: Props) {
         </div>
       </div>
 
-      <StatsGrid stats={data.stats} dailyActivity={data.dailyActivity} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
+          <StatsGrid stats={data.stats} dailyActivity={data.dailyActivity} />
+        </div>
+        <BalanceCard address={address} />
+      </div>
 
       <ActivityHeatmap data={data.dailyActivity} />
 
