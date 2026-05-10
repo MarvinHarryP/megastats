@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Wallet } from "lucide-react";
+import { Wallet, ChevronDown } from "lucide-react";
 import type { BalanceResponse } from "@/app/api/wallet/[address]/balance/route";
 
 interface Props {
@@ -27,6 +27,7 @@ function formatUsd(value: number): string {
 export function BalanceCard({ address }: Props) {
   const [data, setData] = useState<BalanceResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
 
   useEffect(() => {
     fetch(`/api/wallet/${address}/balance`)
@@ -36,38 +37,55 @@ export function BalanceCard({ address }: Props) {
   }, [address]);
 
   const ethAmount = data ? Number(BigInt(data.ethBalance)) / 1e18 : 0;
+  const hasContent = ethAmount > 0 || (data?.tokens.length ?? 0) > 0;
+  const rowCount = 1 + (data?.tokens.length ?? 0); // ETH + tokens
 
   return (
-    <div className="rounded-xl border bg-card p-4 space-y-3">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="rounded-xl border bg-card overflow-hidden">
+      {/* Always-visible header — click to toggle */}
+      <button
+        className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/40 transition-colors"
+        onClick={() => setOpen((o) => !o)}
+        disabled={loading || !hasContent}
+      >
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-md bg-indigo-100 dark:bg-indigo-900/30">
             <Wallet className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
           </div>
           <span className="text-sm font-medium">Wallet Balance</span>
+          {!loading && hasContent && (
+            <span className="text-xs text-muted-foreground">
+              {rowCount} asset{rowCount !== 1 ? "s" : ""}
+            </span>
+          )}
         </div>
-        {!loading && data && data.totalUsd > 0 && (
-          <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
-            {formatUsd(data.totalUsd)} total
-          </span>
-        )}
-      </div>
 
-      {loading ? (
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-8 rounded bg-muted animate-pulse" />
-          ))}
+        <div className="flex items-center gap-3">
+          {loading ? (
+            <div className="h-4 w-20 rounded bg-muted animate-pulse" />
+          ) : data && data.totalUsd > 0 ? (
+            <span className="text-sm font-semibold text-indigo-600 dark:text-indigo-400">
+              {formatUsd(data.totalUsd)} total
+            </span>
+          ) : data ? (
+            <span className="text-sm text-muted-foreground">No value</span>
+          ) : null}
+
+          {!loading && hasContent && (
+            <ChevronDown
+              className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+            />
+          )}
         </div>
-      ) : !data ? (
-        <p className="text-sm text-muted-foreground">Failed to load balance.</p>
-      ) : (
-        <div className="space-y-1">
+      </button>
+
+      {/* Collapsible body */}
+      {open && data && (
+        <div className="border-t divide-y">
           {/* ETH row */}
-          <div className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-muted/50 transition-colors">
-            <div className="flex items-center gap-2">
-              <span className="text-base">⟠</span>
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-3">
+              <span className="text-xl leading-none">⟠</span>
               <div>
                 <p className="text-sm font-medium">ETH</p>
                 <p className="text-xs text-muted-foreground">Ether</p>
@@ -83,17 +101,14 @@ export function BalanceCard({ address }: Props) {
 
           {/* Token rows */}
           {data.tokens.map((token) => (
-            <div
-              key={token.address}
-              className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-muted/50 transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                <span className="w-6 h-6 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground shrink-0">
-                  {token.symbol.slice(0, 2)}
+            <div key={token.address} className="flex items-center justify-between px-4 py-3">
+              <div className="flex items-center gap-3">
+                <span className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground shrink-0">
+                  {token.symbol.slice(0, 2).toUpperCase()}
                 </span>
                 <div>
                   <p className="text-sm font-medium">{token.symbol}</p>
-                  <p className="text-xs text-muted-foreground truncate max-w-[120px]">{token.name}</p>
+                  <p className="text-xs text-muted-foreground truncate max-w-[160px]">{token.name}</p>
                 </div>
               </div>
               <div className="text-right">
@@ -101,15 +116,11 @@ export function BalanceCard({ address }: Props) {
                 {token.usdValue !== null && token.usdValue > 0 ? (
                   <p className="text-xs text-muted-foreground">{formatUsd(token.usdValue)}</p>
                 ) : (
-                  <p className="text-xs text-muted-foreground">No price</p>
+                  <p className="text-xs text-muted-foreground">No price data</p>
                 )}
               </div>
             </div>
           ))}
-
-          {data.tokens.length === 0 && ethAmount === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-2">No balance found</p>
-          )}
         </div>
       )}
     </div>

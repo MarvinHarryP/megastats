@@ -86,12 +86,9 @@ export default async function AddressPage({ params }: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2">
-          <StatsGrid stats={data.stats} dailyActivity={data.dailyActivity} />
-        </div>
-        <BalanceCard address={address} />
-      </div>
+      <StatsGrid stats={data.stats} dailyActivity={data.dailyActivity} />
+
+      <BalanceCard address={address} />
 
       <ActivityHeatmap data={data.dailyActivity} />
 
