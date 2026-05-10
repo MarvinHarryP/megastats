@@ -1,0 +1,61 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { isValidAddress } from "@/lib/utils";
+import { WalletConnectButton } from "@/components/wallet/WalletConnectButton";
+
+export function Header() {
+  const router = useRouter();
+  const [value, setValue] = useState("");
+  const [error, setError] = useState(false);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const addr = value.trim().toLowerCase();
+    if (!isValidAddress(addr)) {
+      setError(true);
+      return;
+    }
+    setError(false);
+    router.push(`/${addr}`);
+    setValue("");
+  };
+
+  return (
+    <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-sm">
+      <div className="container mx-auto px-4 h-14 flex items-center gap-4">
+        <a href="/" className="font-bold text-lg shrink-0">
+          <span className="text-primary">Mega</span>Stats
+        </a>
+
+        <form onSubmit={handleSearch} className="flex-1 flex gap-2 max-w-xl">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={value}
+              onChange={(e) => { setValue(e.target.value); setError(false); }}
+              placeholder="0x... wallet address"
+              className={`pl-8 font-mono text-sm ${error ? "border-red-500 focus-visible:ring-red-500" : ""}`}
+            />
+          </div>
+          <Button type="submit" size="sm">Search</Button>
+        </form>
+
+        <a
+          href="/leaderboard"
+          className="hidden sm:flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900/60 transition-colors shrink-0"
+        >
+          🏆 Leaderboard
+        </a>
+
+        <div className="shrink-0">
+          <WalletConnectButton />
+        </div>
+      </div>
+    </header>
+  );
+}

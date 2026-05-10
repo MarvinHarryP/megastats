@@ -1,0 +1,74 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model WalletCache {
+  id             String   @id
+  lastFetchedAt  DateTime
+  fetchedThrough Int      @default(0)
+  txCount        Int      @default(0)
+  txCountSent    Int      @default(0)
+  txCountReceived Int     @default(0)
+  txCountContract Int     @default(0)
+  uniqueContracts Int     @default(0)
+  activeWeeks    Int      @default(0)
+  activeMonths   Int      @default(0)
+  feesWei        String   @default("0")
+  volumeInWei    String   @default("0")
+  volumeOutWei   String   @default("0")
+  volumeUsd      String   @default("0")
+  activeDays     Int      @default(0)
+  currentStreak  Int      @default(0)
+  longestStreak  Int      @default(0)
+  firstTxAt      DateTime?
+  lastTxAt       DateTime?
+
+  transactions   CachedTransaction[]
+  dailyActivity  DailyActivity[]
+
+  @@map("wallet_cache")
+}
+
+model CachedTransaction {
+  id           Int      @id @default(autoincrement())
+  hash         String
+  walletId     String
+  blockNumber  Int
+  timestamp    DateTime
+  fromAddress  String
+  toAddress    String?
+  value        String
+  gasUsed      String
+  gasPrice     String
+  feeWei       String
+  txType       String
+  isError      Boolean  @default(false)
+  methodId     String?
+  contractName String?
+
+  wallet       WalletCache @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId, timestamp])
+  @@index([walletId, txType])
+  @@map("cached_transaction")
+}
+
+model DailyActivity {
+  id         Int    @id @default(autoincrement())
+  walletId   String
+  date       String
+  txCount    Int
+  feesWei    String
+  volumeWei  String
+
+  wallet     WalletCache @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@unique([walletId, date])
+  @@index([walletId])
+  @@map("daily_activity")
+}
