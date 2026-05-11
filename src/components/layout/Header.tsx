@@ -46,6 +46,13 @@ export function Header() {
         </form>
 
         <a
+          href="/swap"
+          className="hidden sm:flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/60 transition-colors shrink-0"
+        >
+          🔄 Swap
+        </a>
+
+        <a
           href="/leaderboard"
           className="hidden sm:flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 hover:bg-yellow-200 dark:hover:bg-yellow-900/60 transition-colors shrink-0"
         >
