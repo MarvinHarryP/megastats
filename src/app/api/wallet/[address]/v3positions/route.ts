@@ -89,20 +89,21 @@ export async function GET(
   // Hard cap: always respond within 12 s regardless of RPC behaviour
   const deadline = new Promise<void>((resolve) => setTimeout(resolve, 12_000));
 
+  const errors: string[] = [];
   const work = (async () => {
     for (const dex of V3_DEXES) {
       try {
         const positions = await fetchDexPositions(client, dex, address);
         allPositions.push(...positions);
-      } catch {
-        // Skip failed dex reads
+      } catch (e) {
+        errors.push(`${dex.name}: ${e instanceof Error ? e.message : String(e)}`);
       }
     }
   })();
 
   await Promise.race([work, deadline]);
 
-  return NextResponse.json({ positions: allPositions });
+  return NextResponse.json({ positions: allPositions, _debug: errors });
 }
 
 async function fetchDexPositions(
