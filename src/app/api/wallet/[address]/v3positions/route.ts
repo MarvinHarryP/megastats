@@ -1,16 +1,19 @@
 import { NextResponse } from "next/server";
-import { createPublicClient, http, parseAbi } from "viem";
+import { createPublicClient, http, fallback, parseAbi } from "viem";
 import { isValidAddress } from "@/lib/utils";
 import { getPositionAmounts, sqrtPriceX96ToPrice } from "@/lib/v3-math";
 
-// MegaETH mainnet — thirdweb public RPC (drpc.org is rate-limited on free tier)
-const MEGAETH_RPC = "https://4326.rpc.thirdweb.com";
+// MegaETH mainnet — multiple RPCs with automatic fallback
+const MEGAETH_RPCS = [
+  "https://megaeth.gateway.tenderly.co",  // Tenderly — reliable
+  "https://4326.rpc.thirdweb.com",         // Thirdweb — backup
+];
 
 const megaeth = {
   id: 4326,
   name: "MegaETH",
   nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
-  rpcUrls: { default: { http: [MEGAETH_RPC] } },
+  rpcUrls: { default: { http: MEGAETH_RPCS } },
   contracts: {
     multicall3: {
       address: "0xcA11bde05977b3631167028862bE2a173976CA11" as `0x${string}`,
@@ -81,7 +84,9 @@ export async function GET(
 
   const client = createPublicClient({
     chain: megaeth,
-    transport: http(MEGAETH_RPC, { timeout: 8_000 }),
+    transport: fallback(
+      MEGAETH_RPCS.map((url) => http(url, { timeout: 8_000 }))
+    ),
   });
 
   const allPositions: V3Position[] = [];
