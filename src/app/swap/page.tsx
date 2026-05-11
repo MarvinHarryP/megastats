@@ -13,7 +13,7 @@ export default function SwapPage() {
           <p className="text-sm text-muted-foreground">Powered by Kumbaya</p>
         </div>
         <a
-          href="https://kumbaya.exchange"
+          href="https://kumbaya.xyz"
           target="_blank"
           rel="noopener noreferrer"
           className="text-xs text-muted-foreground hover:text-foreground transition-colors"
@@ -24,7 +24,7 @@ export default function SwapPage() {
 
       <div className="rounded-xl border overflow-hidden bg-card" style={{ height: "calc(100vh - 180px)", minHeight: "600px" }}>
         <iframe
-          src="https://kumbaya.exchange"
+          src="https://kumbaya.xyz"
           className="w-full h-full"
           title="Kumbaya Swap"
           allow="clipboard-write"
