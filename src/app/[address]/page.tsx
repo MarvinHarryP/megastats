@@ -14,6 +14,7 @@ import { CopyButton } from "@/components/shared/CopyButton";
 import { ExternalLink } from "lucide-react";
 import { DashboardClient } from "./DashboardClient";
 import { BalanceCard } from "@/components/stats/BalanceCard";
+import { NFTGallery } from "@/components/stats/NFTGallery";
 
 interface Props {
   params: { address: string };
@@ -89,6 +90,8 @@ export default async function AddressPage({ params }: Props) {
       <StatsGrid stats={data.stats} dailyActivity={data.dailyActivity} />
 
       <BalanceCard address={address} />
+
+      <NFTGallery address={address} />
 
       <ActivityHeatmap data={data.dailyActivity} />
 

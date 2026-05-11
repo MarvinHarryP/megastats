@@ -63,3 +63,24 @@ export interface BlockscoutTokenHoldingsResponse {
   items: BlockscoutTokenHolding[];
   next_page_params: Record<string, string | number> | null;
 }
+
+export interface BlockscoutNFT {
+  id: string;
+  token: {
+    name: string | null;
+    address: string;
+    type: string;
+  };
+  image_url: string | null;
+  metadata: {
+    name?: string;
+    image?: string;
+    description?: string;
+  } | null;
+  value?: string;
+}
+
+export interface BlockscoutNFTResponse {
+  items: BlockscoutNFT[];
+  next_page_params: Record<string, string | number> | null;
+}
