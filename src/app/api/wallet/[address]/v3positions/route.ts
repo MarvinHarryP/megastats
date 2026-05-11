@@ -81,19 +81,26 @@ export async function GET(
 
   const client = createPublicClient({
     chain: megaeth,
-    transport: http(MEGAETH_RPC, { timeout: 10_000 }),
+    transport: http(MEGAETH_RPC, { timeout: 8_000 }),
   });
 
   const allPositions: V3Position[] = [];
 
-  for (const dex of V3_DEXES) {
-    try {
-      const positions = await fetchDexPositions(client, dex, address);
-      allPositions.push(...positions);
-    } catch {
-      // Skip failed dex reads
+  // Hard cap: always respond within 12 s regardless of RPC behaviour
+  const deadline = new Promise<void>((resolve) => setTimeout(resolve, 12_000));
+
+  const work = (async () => {
+    for (const dex of V3_DEXES) {
+      try {
+        const positions = await fetchDexPositions(client, dex, address);
+        allPositions.push(...positions);
+      } catch {
+        // Skip failed dex reads
+      }
     }
-  }
+  })();
+
+  await Promise.race([work, deadline]);
 
   return NextResponse.json({ positions: allPositions });
 }

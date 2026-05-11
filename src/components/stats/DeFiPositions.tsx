@@ -185,10 +185,19 @@ export function DeFiPositions({ address }: Props) {
   const [totalUsd, setTotalUsd] = useState(0);
 
   useEffect(() => {
+    // Fetch with abort timeout so a hanging RPC never blocks the UI
+    function fetchWithTimeout(url: string, ms: number) {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), ms);
+      return fetch(url, { signal: ctrl.signal })
+        .then((r) => r.json())
+        .finally(() => clearTimeout(t));
+    }
+
     // Fetch both token-based and V3 LP positions in parallel
     Promise.allSettled([
-      fetch(`/api/wallet/${address}/defi`).then((r) => r.json()),
-      fetch(`/api/wallet/${address}/v3positions`).then((r) => r.json()),
+      fetchWithTimeout(`/api/wallet/${address}/defi`, 10_000),
+      fetchWithTimeout(`/api/wallet/${address}/v3positions`, 15_000),
     ]).then(([defiResult, v3Result]) => {
       const map = new Map<string, ProtocolGroup>();
 
