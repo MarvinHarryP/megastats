@@ -2,17 +2,18 @@
 
 import { useEffect } from "react";
 import { useAccount } from "wagmi";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 
 export function WalletAutoRedirect() {
   const { address, isConnected } = useAccount();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
-    if (isConnected && address) {
+    if (isConnected && address && pathname === "/") {
       router.push(`/${address.toLowerCase()}`);
     }
-  }, [isConnected, address, router]);
+  }, [isConnected, address, pathname, router]);
 
   return null;
 }
