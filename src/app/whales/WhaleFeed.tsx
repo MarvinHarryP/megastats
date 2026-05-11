@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { ExternalLink, Plus, Check } from "lucide-react";
+import { ExternalLink, Plus, Check, Copy } from "lucide-react";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import type { WhaleTx } from "@/app/api/whales/feed/route";
 
@@ -53,6 +53,25 @@ function TimeAgo({ timestamp }: { timestamp: string }) {
   return <span className="text-xs text-muted-foreground tabular-nums">{label}</span>;
 }
 
+function CopyButton({ address }: { address: string }) {
+  const [copied, setCopied] = useState(false);
+  const copy = () => {
+    navigator.clipboard.writeText(address).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+  return (
+    <button
+      onClick={copy}
+      className="p-1 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground shrink-0"
+      title="Copy address"
+    >
+      {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+    </button>
+  );
+}
+
 function TrackButton({ address }: { address: string }) {
   const { isTracked, add } = useWatchlist();
   const tracked = isTracked(address);
@@ -86,12 +105,15 @@ function TxRow({ tx }: { tx: WhaleTx }) {
     <div className="px-4 py-3 rounded-xl border bg-card hover:bg-muted/30 transition-colors">
       {/* Row 1: address + value */}
       <div className="flex items-center justify-between gap-2">
-        <a
-          href={`/${tx.from}`}
-          className="font-mono text-sm font-medium hover:text-primary transition-colors shrink-0"
-        >
-          {shortAddr(tx.from)}
-        </a>
+        <div className="flex items-center gap-1 shrink-0">
+          <a
+            href={`/${tx.from}`}
+            className="font-mono text-sm font-medium hover:text-primary transition-colors"
+          >
+            {shortAddr(tx.from)}
+          </a>
+          <CopyButton address={tx.from} />
+        </div>
         <span className="text-sm font-bold text-primary tabular-nums shrink-0">
           {formatUsd(tx.usdValue)}
         </span>
