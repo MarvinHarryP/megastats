@@ -12,8 +12,9 @@ const WEEKS = 26;
 const DAYS_IN_WEEK = 7;
 const DAY_LABELS = ["Mon", "", "Wed", "", "Fri", "", "Sun"];
 
-function getColor(count: number) {
-  if (count === 0) return "bg-muted";
+function getColor(count: number, isFuture = false) {
+  if (isFuture) return "bg-transparent";
+  if (count === 0) return "bg-gray-200 dark:bg-gray-700";
   if (count <= 2) return "bg-green-200 dark:bg-green-900";
   if (count <= 5) return "bg-green-400 dark:bg-green-700";
   if (count <= 10) return "bg-green-500 dark:bg-green-600";
@@ -21,12 +22,15 @@ function getColor(count: number) {
 }
 
 export function ActivityHeatmap({ data }: Props) {
-  const { grid, months } = useMemo(() => {
+  const { grid, months, todayStr } = useMemo(() => {
     const txByDate = new Map(data.map((d) => [d.date, d.txCount]));
 
     const today = new Date();
+    const todayStr = format(today, "yyyy-MM-dd");
     const start = startOfWeek(subDays(today, WEEKS * 7 - 1), { weekStartsOn: 1 });
-    const days = eachDayOfInterval({ start, end: today });
+    // Extend end to Sunday of current week so the grid is always full
+    const endOfCurrentWeek = startOfWeek(subDays(today, -6), { weekStartsOn: 1 });
+    const days = eachDayOfInterval({ start, end: endOfCurrentWeek });
 
     // Pad to full weeks
     const weeks: { date: string; count: number }[][] = [];
@@ -52,7 +56,7 @@ export function ActivityHeatmap({ data }: Props) {
       }
     });
 
-    return { grid: weeks, months: monthLabels };
+    return { grid: weeks, months: monthLabels, todayStr };
   }, [data]);
 
   return (
@@ -82,13 +86,16 @@ export function ActivityHeatmap({ data }: Props) {
                 <div className="h-4 text-[10px] text-muted-foreground whitespace-nowrap overflow-hidden">
                   {monthLabel?.label ?? ""}
                 </div>
-                {week.map((day, di) => (
-                  <div
-                    key={di}
-                    title={`${day.date}: ${day.count} tx`}
-                    className={`w-full h-[10px] rounded-[2px] ${getColor(day.count)}`}
-                  />
-                ))}
+                {week.map((day, di) => {
+                  const isFuture = day.date > todayStr;
+                  return (
+                    <div
+                      key={di}
+                      title={isFuture ? "" : `${day.date}: ${day.count} tx`}
+                      className={`w-full h-[10px] rounded-[2px] ${getColor(day.count, isFuture)}`}
+                    />
+                  );
+                })}
               </div>
             );
           })}
