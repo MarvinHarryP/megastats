@@ -54,16 +54,22 @@ function TrackButton({ address }: { address: string }) {
 }
 
 const CACHE_KEY = "megastats_whales_feed";
+const CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 
 function loadCached(): WhaleTx[] {
   try {
-    const raw = sessionStorage.getItem(CACHE_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (!raw) return [];
+    const { txs, savedAt } = JSON.parse(raw);
+    if (Date.now() - savedAt > CACHE_TTL_MS) return [];
+    return txs ?? [];
   } catch { return []; }
 }
 
 function saveCached(txs: WhaleTx[]) {
-  try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(txs)); } catch {}
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ txs, savedAt: Date.now() }));
+  } catch {}
 }
 
 export default function WhalesPage() {
