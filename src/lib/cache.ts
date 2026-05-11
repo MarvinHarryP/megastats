@@ -3,7 +3,7 @@ import { fetchAllTransactions, fetchAllTokenTransfers } from "@/lib/blockscout";
 import { computeStats, classifyAndMapTx } from "@/lib/stats";
 import type { StatsResponse } from "@/types/stats";
 
-const TTL_MS = parseInt(process.env.CACHE_TTL_SECONDS ?? "300") * 1000;
+const TTL_MS = Math.max(60, parseInt(process.env.CACHE_TTL_SECONDS ?? "300")) * 1000;
 
 export async function getOrSyncWallet(address: string): Promise<StatsResponse> {
   const addr = address.toLowerCase();

@@ -13,9 +13,14 @@ export async function GET(
   }
 
   const { searchParams } = req.nextUrl;
-  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
-  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "25")));
+  const page = Math.max(1, parseInt(searchParams.get("page") ?? "1") || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "25") || 25));
   const type = searchParams.get("type") ?? "all";
+
+  const VALID_TYPES = ["all", "sent", "received", "contract_call"];
+  if (!VALID_TYPES.includes(type)) {
+    return NextResponse.json({ error: "Invalid type parameter", code: "INVALID_TYPE" }, { status: 400 });
+  }
 
   const where = {
     walletId: address,
