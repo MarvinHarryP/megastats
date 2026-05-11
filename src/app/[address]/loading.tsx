@@ -1,38 +1,4 @@
-"use client";
-
-import { useEffect, useState } from "react";
-
-const STEPS = [
-  "Connecting to MegaETH…",
-  "Fetching transactions…",
-  "Loading token transfers…",
-  "Computing stats…",
-  "Building activity timeline…",
-  "Almost there…",
-];
-
 export default function Loading() {
-  const [step, setStep] = useState(0);
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    const stepInterval = setInterval(() => {
-      setStep((s) => (s + 1) % STEPS.length);
-    }, 1800);
-
-    const progressInterval = setInterval(() => {
-      setProgress((p) => {
-        if (p >= 92) return p;
-        return p + Math.random() * 4;
-      });
-    }, 200);
-
-    return () => {
-      clearInterval(stepInterval);
-      clearInterval(progressInterval);
-    };
-  }, []);
-
   return (
     <div className="space-y-8">
       {/* Main loading card */}
@@ -40,36 +6,25 @@ export default function Loading() {
 
         {/* Animated chain icon */}
         <div className="relative w-20 h-20">
-          {/* Outer ring */}
           <div className="absolute inset-0 rounded-full border-4 border-primary/20" />
           <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary animate-spin" />
-          {/* Inner ring */}
           <div className="absolute inset-3 rounded-full border-4 border-transparent border-b-primary/60 animate-spin [animation-direction:reverse] [animation-duration:1.5s]" />
-          {/* Center dot */}
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="w-3 h-3 rounded-full bg-primary animate-pulse" />
           </div>
         </div>
 
         {/* Status text */}
-        <div className="space-y-1 min-h-[48px]">
-          <p className="text-lg font-semibold text-primary transition-all duration-500">
-            {STEPS[step]}
-          </p>
+        <div className="space-y-1">
+          <p className="text-lg font-semibold text-primary">Loading wallet data…</p>
           <p className="text-xs text-muted-foreground">Scanning on-chain data via Blockscout</p>
         </div>
 
-        {/* Progress bar */}
+        {/* Pure CSS indeterminate progress bar — no JS needed */}
         <div className="w-full max-w-xs">
           <div className="h-1.5 rounded-full bg-muted overflow-hidden">
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-300 ease-out"
-              style={{ width: `${progress}%` }}
-            />
+            <div className="h-full rounded-full bg-primary animate-[loading_1.4s_ease-in-out_infinite]" />
           </div>
-          <p className="text-xs text-muted-foreground mt-1.5 text-right">
-            {Math.round(progress)}%
-          </p>
         </div>
 
         {/* Animated blocks */}
@@ -88,7 +43,7 @@ export default function Loading() {
         </div>
       </div>
 
-      {/* Skeleton placeholders below */}
+      {/* Skeleton placeholders */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {Array.from({ length: 4 }).map((_, i) => (
           <div

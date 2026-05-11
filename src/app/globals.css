@@ -103,3 +103,9 @@
 .animate-float-block {
   animation: float-block ease-in-out infinite;
 }
+
+@keyframes loading {
+  0%   { transform: translateX(-100%); width: 40%; }
+  50%  { width: 60%; }
+  100% { transform: translateX(260%); width: 40%; }
+}
