@@ -15,6 +15,7 @@ import { ExternalLink } from "lucide-react";
 import { DashboardClient } from "./DashboardClient";
 import { BalanceCard } from "@/components/stats/BalanceCard";
 import { NFTGallery } from "@/components/stats/NFTGallery";
+import { DeFiPositions } from "@/components/stats/DeFiPositions";
 
 interface Props {
   params: { address: string };
@@ -90,6 +91,8 @@ export default async function AddressPage({ params }: Props) {
       <StatsGrid stats={data.stats} dailyActivity={data.dailyActivity} />
 
       <BalanceCard address={address} />
+
+      <DeFiPositions address={address} />
 
       <NFTGallery address={address} />
 
