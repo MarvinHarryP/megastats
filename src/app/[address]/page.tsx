@@ -97,7 +97,8 @@ export default async function AddressPage({ params }: Props) {
 
       <BalanceCard address={address} />
 
-      <DeFiPositions address={address} initialDefiPositions={initialDefiPositions} />
+      {/* DeFiPositions temporarily hidden — re-enable when ready */}
+      {/* <DeFiPositions address={address} initialDefiPositions={initialDefiPositions} /> */}
 
       <NFTGallery address={address} />
 

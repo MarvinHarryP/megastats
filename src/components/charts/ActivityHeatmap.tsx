@@ -63,37 +63,35 @@ export function ActivityHeatmap({ data }: Props) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <div className="inline-flex gap-[3px]">
-            {/* Day labels */}
-            <div className="flex flex-col gap-[3px] mr-1">
-              <div className="h-4 text-[10px]" />
-              {DAY_LABELS.map((d, i) => (
-                <div key={i} className="h-[10px] text-[10px] text-muted-foreground leading-[10px] w-6">
-                  {d}
-                </div>
-              ))}
-            </div>
-
-            {/* Weeks */}
-            {grid.map((week, wi) => {
-              const monthLabel = months.find((m) => m.col === wi);
-              return (
-                <div key={wi} className="flex flex-col gap-[3px]">
-                  <div className="h-4 text-[10px] text-muted-foreground whitespace-nowrap">
-                    {monthLabel?.label ?? ""}
-                  </div>
-                  {week.map((day, di) => (
-                    <div
-                      key={di}
-                      title={`${day.date}: ${day.count} tx`}
-                      className={`w-[10px] h-[10px] rounded-[2px] ${getColor(day.count)}`}
-                    />
-                  ))}
-                </div>
-              );
-            })}
+        <div className="flex gap-[3px] w-full min-w-0">
+          {/* Day labels */}
+          <div className="flex flex-col gap-[3px] shrink-0 mr-1">
+            <div className="h-4 text-[10px]" />
+            {DAY_LABELS.map((d, i) => (
+              <div key={i} className="h-[10px] text-[10px] text-muted-foreground leading-[10px] w-6">
+                {d}
+              </div>
+            ))}
           </div>
+
+          {/* Weeks — flex-1 so they fill the full card width */}
+          {grid.map((week, wi) => {
+            const monthLabel = months.find((m) => m.col === wi);
+            return (
+              <div key={wi} className="flex flex-col gap-[3px] flex-1 min-w-0">
+                <div className="h-4 text-[10px] text-muted-foreground whitespace-nowrap overflow-hidden">
+                  {monthLabel?.label ?? ""}
+                </div>
+                {week.map((day, di) => (
+                  <div
+                    key={di}
+                    title={`${day.date}: ${day.count} tx`}
+                    className={`w-full h-[10px] rounded-[2px] ${getColor(day.count)}`}
+                  />
+                ))}
+              </div>
+            );
+          })}
         </div>
         <div className="flex items-center gap-1.5 mt-2 justify-end">
           <span className="text-[10px] text-muted-foreground">Less</span>
