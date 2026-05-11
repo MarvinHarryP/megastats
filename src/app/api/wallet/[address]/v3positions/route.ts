@@ -3,8 +3,8 @@ import { createPublicClient, http, parseAbi } from "viem";
 import { isValidAddress } from "@/lib/utils";
 import { getPositionAmounts, sqrtPriceX96ToPrice } from "@/lib/v3-math";
 
-// MegaETH mainnet
-const MEGAETH_RPC = "https://megaeth.drpc.org";
+// MegaETH mainnet — thirdweb public RPC (drpc.org is rate-limited on free tier)
+const MEGAETH_RPC = "https://4326.rpc.thirdweb.com";
 
 const megaeth = {
   id: 4326,

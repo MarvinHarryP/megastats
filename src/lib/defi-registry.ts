@@ -42,7 +42,7 @@ const REGISTRY: Record<string, ProtocolInfo> = {
   "0xa629db8732334a30a13325dad1b6eb9118122ad3": { protocol: "Kumbaya", type: "MEGA/USDm LP (0.3%)", icon: "🔄", color: "orange", url: "https://kumbaya.exchange" },
   "0x53223778137650b7e2162a796a4b6d07d9be2c01": { protocol: "Kumbaya", type: "MEGA/USDT0 LP",      icon: "🔄", color: "orange", url: "https://kumbaya.exchange" },
   "0xd14c23ed38195c8c754e793849953df984dab529": { protocol: "Kumbaya", type: "WETH/USDT0 LP",      icon: "🔄", color: "orange", url: "https://kumbaya.exchange" },
-  "0xcbadc​e0825ac9c9802e4d62c3a0cc29fbd7ec485": { protocol: "Kumbaya", type: "BTC.b/USDm LP",     icon: "🔄", color: "orange", url: "https://kumbaya.exchange" },
+  "0xcbadce0825ac9c9802e4d62c3a0cc29fbd7ec485": { protocol: "Kumbaya", type: "BTC.b/USDm LP",     icon: "🔄", color: "orange", url: "https://kumbaya.exchange" },
   "0xdcdb09546179e38e41e39e8a14fdcc1dec885722": { protocol: "Kumbaya", type: "DUCK/WETH LP",       icon: "🔄", color: "orange", url: "https://kumbaya.exchange" },
   // Kumbaya reward tokens (rcowKumbaya*)
   "0x84845b1eb38f334c664acaf332d857f790ebd700": { protocol: "Kumbaya", type: "WETH/USDm Rewards",      icon: "🔄", color: "orange", url: "https://kumbaya.exchange" },
