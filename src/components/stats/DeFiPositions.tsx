@@ -3,10 +3,21 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, ExternalLink } from "lucide-react";
 import type { DeFiPosition } from "@/app/api/wallet/[address]/defi/route";
+import type { V3Position } from "@/app/api/wallet/[address]/v3positions/route";
 import { PROTOCOL_COLORS, PROTOCOL_LOGOS } from "@/lib/defi-registry";
 
 interface Props {
   address: string;
+}
+
+// Unified position row for rendering
+interface UnifiedPosition {
+  key: string;
+  label: string;       // e.g. "WETH/USDm LP" or "GLV Vault"
+  sublabel?: string;   // e.g. "0.3% · In Range" or "gUSDM"
+  amount?: string;
+  usdValue: number | null;
+  badge?: { text: string; green: boolean };
 }
 
 interface ProtocolGroup {
@@ -14,7 +25,7 @@ interface ProtocolGroup {
   icon: string;
   color: string;
   url?: string;
-  positions: DeFiPosition[];
+  positions: UnifiedPosition[];
   totalUsd: number;
 }
 
@@ -24,15 +35,11 @@ function formatUsd(value: number): string {
   return "$" + value.toFixed(2);
 }
 
-function formatAmount(amount: number): string {
-  if (amount >= 1_000_000) return (amount / 1_000_000).toFixed(2) + "M";
-  if (amount >= 1_000) return (amount / 1_000).toFixed(2) + "K";
-  if (amount < 0.0001) return "< 0.0001";
-  return amount.toFixed(4);
-}
-
-function positionLabel(count: number): string {
-  return count === 1 ? "1 position" : `${count} positions`;
+function formatAmount(amount: number, symbol: string): string {
+  if (amount >= 1_000_000) return (amount / 1_000_000).toFixed(2) + "M " + symbol;
+  if (amount >= 1_000) return (amount / 1_000).toFixed(2) + "K " + symbol;
+  if (amount < 0.0001 && amount > 0) return "< 0.0001 " + symbol;
+  return amount.toFixed(4) + " " + symbol;
 }
 
 function ProtocolIcon({ protocol, icon, color }: { protocol: string; icon: string; color: string }) {
@@ -63,6 +70,7 @@ function ProtocolIcon({ protocol, icon, color }: { protocol: string; icon: strin
 
 function ProtocolRow({ group }: { group: ProtocolGroup }) {
   const [open, setOpen] = useState(false);
+  const count = group.positions.length;
 
   return (
     <div className="rounded-xl border bg-card overflow-hidden">
@@ -74,7 +82,9 @@ function ProtocolRow({ group }: { group: ProtocolGroup }) {
 
         <div className="flex-1 text-left min-w-0">
           <p className="font-semibold text-sm">{group.protocol}</p>
-          <p className="text-xs text-muted-foreground">{positionLabel(group.positions.length)}</p>
+          <p className="text-xs text-muted-foreground">
+            {count === 1 ? "1 position" : `${count} positions`}
+          </p>
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
@@ -102,17 +112,34 @@ function ProtocolRow({ group }: { group: ProtocolGroup }) {
         <div className="border-t divide-y divide-border/50">
           {group.positions.map((pos) => (
             <div
-              key={pos.address}
+              key={pos.key}
               className="flex items-center justify-between px-4 py-2.5 bg-muted/10 hover:bg-muted/20 transition-colors"
             >
-              <div className="min-w-0">
-                <p className="text-sm font-medium truncate">{pos.type}</p>
-                <p className="text-xs text-muted-foreground truncate font-mono">{pos.symbol}</p>
+              <div className="min-w-0 space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium">{pos.label}</p>
+                  {pos.badge && (
+                    <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                      pos.badge.green
+                        ? "bg-green-500/20 text-green-500"
+                        : "bg-red-500/20 text-red-400"
+                    }`}>
+                      {pos.badge.text}
+                    </span>
+                  )}
+                </div>
+                {pos.sublabel && (
+                  <p className="text-xs text-muted-foreground">{pos.sublabel}</p>
+                )}
+                {pos.amount && (
+                  <p className="text-xs text-muted-foreground font-mono">{pos.amount}</p>
+                )}
               </div>
               <div className="text-right shrink-0 ml-4">
-                <p className="text-sm tabular-nums text-muted-foreground">{formatAmount(pos.amount)}</p>
                 {pos.usdValue !== null && pos.usdValue > 0 && (
-                  <p className="text-xs font-medium text-primary tabular-nums">{formatUsd(pos.usdValue)}</p>
+                  <p className="text-sm font-semibold text-primary tabular-nums">
+                    {formatUsd(pos.usdValue)}
+                  </p>
                 )}
               </div>
             </div>
@@ -123,48 +150,91 @@ function ProtocolRow({ group }: { group: ProtocolGroup }) {
   );
 }
 
+// Convert token-based DeFiPosition to UnifiedPosition
+function defiToUnified(p: DeFiPosition): UnifiedPosition {
+  return {
+    key: `token-${p.address}`,
+    label: p.type,
+    sublabel: p.symbol,
+    amount: p.amount > 0 ? formatAmount(p.amount, p.symbol) : undefined,
+    usdValue: p.usdValue,
+  };
+}
+
+// Convert V3Position to UnifiedPosition
+function v3ToUnified(p: V3Position): UnifiedPosition {
+  const feePercent = (p.fee / 10000).toFixed(2).replace(/\.?0+$/, "") + "%";
+  const pair = `${p.token0Symbol}/${p.token1Symbol}`;
+
+  let amountParts: string[] = [];
+  if (p.amount0 > 0.00001) amountParts.push(formatAmount(p.amount0, p.token0Symbol));
+  if (p.amount1 > 0.00001) amountParts.push(formatAmount(p.amount1, p.token1Symbol));
+
+  return {
+    key: `v3-${p.tokenId}`,
+    label: `${pair} ${feePercent}`,
+    sublabel: amountParts.join(" + ") || undefined,
+    usdValue: p.usdValue,
+    badge: { text: p.inRange ? "In Range" : "Out of Range", green: p.inRange },
+  };
+}
+
 export function DeFiPositions({ address }: Props) {
   const [groups, setGroups] = useState<ProtocolGroup[]>([]);
   const [loading, setLoading] = useState(true);
   const [totalUsd, setTotalUsd] = useState(0);
 
   useEffect(() => {
-    fetch(`/api/wallet/${address}/defi`)
-      .then((r) => r.json())
-      .then((data) => {
-        const positions: DeFiPosition[] = data.positions ?? [];
+    // Fetch both token-based and V3 LP positions in parallel
+    Promise.allSettled([
+      fetch(`/api/wallet/${address}/defi`).then((r) => r.json()),
+      fetch(`/api/wallet/${address}/v3positions`).then((r) => r.json()),
+    ]).then(([defiResult, v3Result]) => {
+      const map = new Map<string, ProtocolGroup>();
 
-        // Group by protocol
-        const map = new Map<string, ProtocolGroup>();
+      // Add token-based DeFi positions
+      if (defiResult.status === "fulfilled") {
+        const positions: DeFiPosition[] = defiResult.value.positions ?? [];
         for (const p of positions) {
           if (!map.has(p.protocol)) {
             map.set(p.protocol, {
-              protocol: p.protocol,
-              icon: p.icon,
-              color: p.color ?? "gray",
-              url: p.url,
-              positions: [],
-              totalUsd: 0,
+              protocol: p.protocol, icon: p.icon, color: p.color ?? "gray",
+              url: p.url, positions: [], totalUsd: 0,
             });
           }
           const g = map.get(p.protocol)!;
-          g.positions.push(p);
+          g.positions.push(defiToUnified(p));
           g.totalUsd += p.usdValue ?? 0;
         }
+      }
 
-        const sorted = Array.from(map.values()).sort((a, b) => b.totalUsd - a.totalUsd);
-        setGroups(sorted);
-        setTotalUsd(sorted.reduce((s, g) => s + g.totalUsd, 0));
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+      // Add V3 LP positions
+      if (v3Result.status === "fulfilled") {
+        const v3Positions: V3Position[] = v3Result.value.positions ?? [];
+        for (const p of v3Positions) {
+          if (!map.has(p.protocol)) {
+            map.set(p.protocol, {
+              protocol: p.protocol, icon: p.icon, color: p.color,
+              url: p.url, positions: [], totalUsd: 0,
+            });
+          }
+          const g = map.get(p.protocol)!;
+          g.positions.push(v3ToUnified(p));
+          g.totalUsd += p.usdValue ?? 0;
+        }
+      }
+
+      const sorted = Array.from(map.values()).sort((a, b) => b.totalUsd - a.totalUsd);
+      setGroups(sorted);
+      setTotalUsd(sorted.reduce((s, g) => s + g.totalUsd, 0));
+      setLoading(false);
+    });
   }, [address]);
 
   if (loading || groups.length === 0) return null;
 
   return (
     <div className="space-y-2">
-      {/* Section header */}
       <div className="flex items-center justify-between px-1">
         <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           ⚡ DeFi Positions
@@ -173,8 +243,6 @@ export function DeFiPositions({ address }: Props) {
           <p className="text-xs font-semibold text-primary">{formatUsd(totalUsd)} total</p>
         )}
       </div>
-
-      {/* One card per protocol */}
       {groups.map((group) => (
         <ProtocolRow key={group.protocol} group={group} />
       ))}
