@@ -48,7 +48,9 @@ export function Header() {
 
         {/* Desktop nav links */}
         <a
-          href="/swap"
+          href="https://www.mtrkr.xyz/swap"
+          target="_blank"
+          rel="noopener noreferrer"
           className="hidden sm:flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/60 transition-colors shrink-0"
         >
           🔄 Swap
@@ -93,7 +95,9 @@ export function Header() {
       {menuOpen && (
         <div className="sm:hidden border-t bg-background px-4 py-3 flex flex-col gap-1">
           <a
-            href="/swap"
+            href="https://www.mtrkr.xyz/swap"
+            target="_blank"
+            rel="noopener noreferrer"
             onClick={() => setMenuOpen(false)}
             className="flex items-center gap-2 text-sm font-medium px-3 py-2.5 rounded-md hover:bg-muted transition-colors text-blue-700 dark:text-blue-400"
           >
