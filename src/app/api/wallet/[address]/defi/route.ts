@@ -9,6 +9,7 @@ export interface DeFiPosition {
   protocol: string;
   type: string;
   icon: string;
+  color: string;
   url?: string;
   symbol: string;
   name: string;
@@ -54,6 +55,7 @@ export async function GET(
         protocol: info.protocol,
         type: info.type,
         icon: info.icon,
+        color: info.color,
         url: info.url,
         symbol: h.token.symbol,
         name: h.token.name,
