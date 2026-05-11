@@ -128,47 +128,80 @@ export default async function LeaderboardPage({
             </div>
           )}
 
-          {/* Rest of the table */}
+          {/* Rest of the list */}
           {rest.length > 0 && (
-            <div className="rounded-lg border overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-muted/40">
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-12">#</th>
-                    <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Wallet</th>
-                    <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Txs</th>
-                    <th className="text-right px-4 py-2.5 font-medium text-muted-foreground hidden sm:table-cell">Volume</th>
-                    <th className="text-right px-4 py-2.5 font-medium text-muted-foreground hidden md:table-cell">Contracts</th>
-                    <th className="text-right px-4 py-2.5 font-medium text-muted-foreground hidden md:table-cell">Active Days</th>
-                    <th className="text-right px-4 py-2.5 font-medium text-muted-foreground hidden lg:table-cell">Streak</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rest.map((w, i) => {
-                    const volUsd = parseFloat(w.volumeUsd);
-                    return (
-                      <tr key={w.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                        <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{i + 4}</td>
-                        <td className="px-4 py-3">
-                          <Link href={`/${w.id}`} className="font-mono text-primary hover:underline">
-                            {formatAddress(w.id, 8)}
-                          </Link>
-                        </td>
-                        <td className="px-4 py-3 text-right font-semibold">{w.txCount.toLocaleString()}</td>
-                        <td className="px-4 py-3 text-right text-muted-foreground hidden sm:table-cell">
-                          {volUsd > 0 ? `$${volUsd.toLocaleString("en-US", { maximumFractionDigits: 0 })}` : "—"}
-                        </td>
-                        <td className="px-4 py-3 text-right text-muted-foreground hidden md:table-cell">{w.uniqueContracts}</td>
-                        <td className="px-4 py-3 text-right text-muted-foreground hidden md:table-cell">{w.activeDays}</td>
-                        <td className="px-4 py-3 text-right text-muted-foreground hidden lg:table-cell">
-                          {w.currentStreak > 0 ? `🔥 ${w.currentStreak}` : "—"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <>
+              {/* Mobile cards (< sm) */}
+              <div className="sm:hidden space-y-2">
+                {rest.map((w, i) => {
+                  const volUsd = parseFloat(w.volumeUsd);
+                  const mainValue =
+                    sort === "volumeUsd"
+                      ? volUsd > 0 ? `$${volUsd.toLocaleString("en-US", { maximumFractionDigits: 0 })}` : "—"
+                      : sort === "activeDays"
+                      ? `${w.activeDays} days`
+                      : w.txCount.toLocaleString();
+                  return (
+                    <div key={w.id} className="rounded-xl border bg-card px-4 py-3 flex items-center gap-3">
+                      <span className="text-base font-bold text-muted-foreground w-8 shrink-0 tabular-nums">{i + 4}</span>
+                      <div className="flex-1 min-w-0">
+                        <Link href={`/${w.id}`} className="font-mono text-sm font-medium text-primary hover:underline truncate block">
+                          {formatAddress(w.id, 10)}
+                        </Link>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {w.txCount.toLocaleString()} txs
+                          {volUsd > 0 && ` · $${volUsd.toLocaleString("en-US", { maximumFractionDigits: 0 })}`}
+                          {` · ${w.activeDays}d active`}
+                          {w.currentStreak > 0 && ` · 🔥${w.currentStreak}`}
+                        </p>
+                      </div>
+                      <span className="text-sm font-bold tabular-nums shrink-0">{mainValue}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Desktop table (≥ sm) */}
+              <div className="hidden sm:block rounded-lg border overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-muted/40">
+                      <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-12">#</th>
+                      <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Wallet</th>
+                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Txs</th>
+                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Volume</th>
+                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground hidden md:table-cell">Contracts</th>
+                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground hidden md:table-cell">Active Days</th>
+                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground hidden lg:table-cell">Streak</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rest.map((w, i) => {
+                      const volUsd = parseFloat(w.volumeUsd);
+                      return (
+                        <tr key={w.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                          <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{i + 4}</td>
+                          <td className="px-4 py-3">
+                            <Link href={`/${w.id}`} className="font-mono text-primary hover:underline">
+                              {formatAddress(w.id, 8)}
+                            </Link>
+                          </td>
+                          <td className="px-4 py-3 text-right font-semibold">{w.txCount.toLocaleString()}</td>
+                          <td className="px-4 py-3 text-right text-muted-foreground">
+                            {volUsd > 0 ? `$${volUsd.toLocaleString("en-US", { maximumFractionDigits: 0 })}` : "—"}
+                          </td>
+                          <td className="px-4 py-3 text-right text-muted-foreground hidden md:table-cell">{w.uniqueContracts}</td>
+                          <td className="px-4 py-3 text-right text-muted-foreground hidden md:table-cell">{w.activeDays}</td>
+                          <td className="px-4 py-3 text-right text-muted-foreground hidden lg:table-cell">
+                            {w.currentStreak > 0 ? `🔥 ${w.currentStreak}` : "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </>
       )}

@@ -83,32 +83,40 @@ function TxRow({ tx }: { tx: WhaleTx }) {
     : "Contract Call";
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 rounded-xl border bg-card hover:bg-muted/30 transition-colors">
-      <a
-        href={`/${tx.from}`}
-        className="font-mono text-sm font-medium hover:text-primary transition-colors shrink-0"
-      >
-        {shortAddr(tx.from)}
-      </a>
-      <span className="text-xs text-muted-foreground truncate flex-1 min-w-0">
-        {label}
-        {tx.tokenTransfers.length > 1 && (
-          <span className="ml-1 opacity-60">+{tx.tokenTransfers.length - 1} more</span>
-        )}
-      </span>
-      <span className="text-sm font-bold text-primary tabular-nums shrink-0">
-        {formatUsd(tx.usdValue)}
-      </span>
-      <TimeAgo timestamp={tx.timestamp} />
-      <a
-        href={`https://megaeth.blockscout.com/tx/${tx.hash}`}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-muted-foreground hover:text-foreground transition-colors shrink-0"
-      >
-        <ExternalLink className="h-3.5 w-3.5" />
-      </a>
-      <TrackButton address={tx.from} />
+    <div className="px-4 py-3 rounded-xl border bg-card hover:bg-muted/30 transition-colors">
+      {/* Row 1: address + value */}
+      <div className="flex items-center justify-between gap-2">
+        <a
+          href={`/${tx.from}`}
+          className="font-mono text-sm font-medium hover:text-primary transition-colors shrink-0"
+        >
+          {shortAddr(tx.from)}
+        </a>
+        <span className="text-sm font-bold text-primary tabular-nums shrink-0">
+          {formatUsd(tx.usdValue)}
+        </span>
+      </div>
+      {/* Row 2: label + time + icons */}
+      <div className="flex items-center justify-between gap-2 mt-1">
+        <span className="text-xs text-muted-foreground truncate flex-1 min-w-0">
+          {label}
+          {tx.tokenTransfers.length > 1 && (
+            <span className="ml-1 opacity-60">+{tx.tokenTransfers.length - 1} more</span>
+          )}
+        </span>
+        <div className="flex items-center gap-2 shrink-0">
+          <TimeAgo timestamp={tx.timestamp} />
+          <a
+            href={`https://megaeth.blockscout.com/tx/${tx.hash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+          <TrackButton address={tx.from} />
+        </div>
+      </div>
     </div>
   );
 }

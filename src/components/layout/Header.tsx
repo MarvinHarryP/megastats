@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search } from "lucide-react";
+import { Search, Menu, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { isValidAddress } from "@/lib/utils";
@@ -12,6 +12,7 @@ export function Header() {
   const router = useRouter();
   const [value, setValue] = useState("");
   const [error, setError] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -45,6 +46,7 @@ export function Header() {
           <Button type="submit" size="sm">Search</Button>
         </form>
 
+        {/* Desktop nav links */}
         <a
           href="/swap"
           className="hidden sm:flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/60 transition-colors shrink-0"
@@ -73,10 +75,53 @@ export function Header() {
           👀 Tracker
         </a>
 
+        {/* Mobile hamburger button */}
+        <button
+          className="sm:hidden p-1.5 rounded-md hover:bg-muted transition-colors shrink-0"
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-label="Toggle menu"
+        >
+          {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
+
         <div className="shrink-0">
           <WalletConnectButton />
         </div>
       </div>
+
+      {/* Mobile dropdown menu */}
+      {menuOpen && (
+        <div className="sm:hidden border-t bg-background px-4 py-3 flex flex-col gap-1">
+          <a
+            href="/swap"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center gap-2 text-sm font-medium px-3 py-2.5 rounded-md hover:bg-muted transition-colors text-blue-700 dark:text-blue-400"
+          >
+            🔄 Swap
+          </a>
+          <a
+            href="/leaderboard"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center gap-2 text-sm font-medium px-3 py-2.5 rounded-md hover:bg-muted transition-colors text-yellow-700 dark:text-yellow-400"
+          >
+            🏆 Leaderboard
+          </a>
+          <a
+            href="/whales"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center gap-2 text-sm font-medium px-3 py-2.5 rounded-md hover:bg-muted transition-colors text-green-700 dark:text-green-400"
+          >
+            🐋 Whales
+          </a>
+          <a
+            href="/tracker"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center gap-2 text-sm font-medium px-3 py-2.5 rounded-md hover:bg-muted transition-colors text-purple-700 dark:text-purple-400"
+          >
+            👀 Tracker
+          </a>
+        </div>
+      )}
     </header>
   );
 }

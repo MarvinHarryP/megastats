@@ -97,7 +97,7 @@ function TrackerCard({
 
       {/* Stats row */}
       {summary ? (
-        <div className="border-t grid grid-cols-3 divide-x bg-muted/20">
+        <div className="border-t grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x bg-muted/20">
           <div className="px-4 py-2 text-center">
             <p className="text-xs text-muted-foreground">Transactions</p>
             <p className="text-sm font-bold tabular-nums">{summary.txCount.toLocaleString()}</p>
@@ -157,7 +157,7 @@ export default function TrackerPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-bold">👀 Mein Tracker</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
