@@ -36,8 +36,14 @@ export async function GET(
       const info = lookupProtocol(h.token.address, h.token.symbol, h.token.name);
       if (!info) continue;
 
-      const decimals = parseInt(h.token.decimals ?? "18", 10);
-      const amount = Number(BigInt(h.value)) / Math.pow(10, decimals);
+      let amount = 0;
+      try {
+        const decimals = parseInt(h.token.decimals ?? "18", 10);
+        const raw = h.value?.replace(/[^0-9]/g, "") || "0";
+        amount = Number(BigInt(raw)) / Math.pow(10, decimals);
+      } catch {
+        continue;
+      }
       if (amount <= 0) continue;
 
       const rate = parseFloat(h.token.exchange_rate ?? "0");
@@ -71,7 +77,7 @@ async function fetchAllTokenHoldings(address: string): Promise<BlockscoutTokenHo
 
   for (let page = 0; page < 5; page++) {
     const qs = new URLSearchParams(params).toString();
-    const url = `${BASE}/addresses/${address}/tokens${qs ? `?${qs}` : ""}`;
+    const url = `${BASE}/addresses/${address}/tokens?type=ERC-20${qs ? `&${qs}` : ""}`;
     const res = await fetch(url, { next: { revalidate: 60 } });
     const data = await res.json();
     all.push(...(data.items ?? []));
