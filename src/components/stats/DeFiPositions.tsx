@@ -34,7 +34,7 @@ function groupByProtocol(positions: DeFiPosition[]): Record<string, DeFiPosition
 export function DeFiPositions({ address }: Props) {
   const [positions, setPositions] = useState<DeFiPosition[]>([]);
   const [loading, setLoading] = useState(true);
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
 
   useEffect(() => {
     fetch(`/api/wallet/${address}/defi`)
