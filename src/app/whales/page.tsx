@@ -67,8 +67,9 @@ function saveCached(txs: WhaleTx[]) {
 }
 
 export default function WhalesPage() {
-  const [txs, setTxs] = useState<WhaleTx[]>(() => loadCached());
+  const [txs, setTxs] = useState<WhaleTx[]>([]);
   const [min, setMin] = useState(1_000);
+  const initialLoad = useRef(true);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
   const seenHashes = useRef(new Set<string>());
@@ -106,10 +107,17 @@ export default function WhalesPage() {
 
   useEffect(() => {
     seenHashes.current.clear();
-    // Keep cached data visible while new data loads
-    const cached = loadCached();
-    setTxs(cached);
-    setLoading(cached.length === 0);
+    if (initialLoad.current) {
+      // Restore cache on first mount so page feels instant
+      const cached = loadCached();
+      setTxs(cached);
+      setLoading(cached.length === 0);
+      initialLoad.current = false;
+    } else {
+      // Filter changed — clear and reload fresh
+      setTxs([]);
+      setLoading(true);
+    }
     fetchFeed();
     const interval = setInterval(fetchFeed, 5_000);
     return () => clearInterval(interval);

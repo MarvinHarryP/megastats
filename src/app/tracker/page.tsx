@@ -69,8 +69,6 @@ function TrackerCard({
         <div className="flex items-center gap-1 shrink-0">
           <a
             href={`/${entry.address}`}
-            target="_blank"
-            rel="noopener noreferrer"
             className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
             title="MegaStats öffnen"
           >
