@@ -16,7 +16,7 @@ import { DashboardClient } from "./DashboardClient";
 import { BalanceCard } from "@/components/stats/BalanceCard";
 import { NFTGallery } from "@/components/stats/NFTGallery";
 import { DeFiPositions } from "@/components/stats/DeFiPositions";
-import { fetchDefiPositions } from "@/app/api/wallet/[address]/defi/route";
+import { fetchDefiPositions } from "@/lib/defi-fetcher";
 
 interface Props {
   params: { address: string };

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ChevronDown, ExternalLink } from "lucide-react";
-import type { DeFiPosition } from "@/app/api/wallet/[address]/defi/route";
+import type { DeFiPosition } from "@/lib/defi-fetcher";
 import type { V3Position } from "@/app/api/wallet/[address]/v3positions/route";
 import { PROTOCOL_COLORS, PROTOCOL_LOGOS } from "@/lib/defi-registry";
 
