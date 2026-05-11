@@ -66,3 +66,40 @@
     transform: translateY(0);
   }
 }
+
+@keyframes letter-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-40px) scale(1.3);
+    filter: blur(8px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(4px) scale(0.97);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes float-block {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(-18px) rotate(8deg);
+    opacity: 0.8;
+  }
+}
+
+.animate-letter-drop {
+  animation: letter-drop 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.animate-float-block {
+  animation: float-block ease-in-out infinite;
+}

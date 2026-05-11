@@ -1,11 +1,8 @@
-import { WalletAutoRedirect } from "@/components/wallet/WalletAutoRedirect";
 import { Zap, TrendingUp, Flame } from "lucide-react";
 
 export default function HomePage() {
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] gap-10 overflow-hidden">
-      <WalletAutoRedirect />
-
       {/* Badge */}
       <div className="animate-fade-in-up opacity-0 [animation-delay:0ms] [animation-fill-mode:forwards]">
         <div className="inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm text-muted-foreground bg-muted/50">
