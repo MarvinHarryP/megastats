@@ -53,7 +53,7 @@ function TrackerCard({
                 if (e.key === "Enter") save();
                 if (e.key === "Escape") setEditing(false);
               }}
-              placeholder="Label vergeben…"
+              placeholder="Add a label…"
               className="w-full text-sm bg-transparent border-b border-primary outline-none pb-0.5"
             />
           ) : (
@@ -70,7 +70,7 @@ function TrackerCard({
           <a
             href={`/${entry.address}`}
             className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-            title="MegaStats öffnen"
+            title="Open in MegaStats"
           >
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
@@ -99,7 +99,7 @@ function TrackerCard({
       {summary ? (
         <div className="border-t grid grid-cols-3 divide-x bg-muted/20">
           <div className="px-4 py-2 text-center">
-            <p className="text-xs text-muted-foreground">Transaktionen</p>
+            <p className="text-xs text-muted-foreground">Transactions</p>
             <p className="text-sm font-bold tabular-nums">{summary.txCount.toLocaleString()}</p>
           </div>
           <div className="px-4 py-2 text-center">
@@ -107,7 +107,7 @@ function TrackerCard({
             <p className="text-sm font-bold tabular-nums text-primary">{formatUsd(summary.volumeUsd)}</p>
           </div>
           <div className="px-4 py-2 text-center">
-            <p className="text-xs text-muted-foreground">Letzte Aktivität</p>
+            <p className="text-xs text-muted-foreground">Last Activity</p>
             <p className="text-sm font-bold tabular-nums">
               {summary.lastTxAt
                 ? formatDistanceToNow(new Date(summary.lastTxAt), { addSuffix: true })
@@ -118,7 +118,7 @@ function TrackerCard({
       ) : (
         <div className="border-t px-4 py-2 bg-muted/20 flex items-center gap-2 text-xs text-muted-foreground">
           <Activity className="h-3 w-3 animate-pulse" />
-          Wallet noch nicht in MegaStats gecacht — öffne das Profil einmal um Daten zu laden
+          Wallet not yet cached — open the profile once to load stats
         </div>
       )}
     </div>
@@ -161,7 +161,7 @@ export default function TrackerPage() {
         <div>
           <h1 className="text-2xl font-bold">👀 Mein Tracker</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Beobachte Wallets aus dem Whale Feed
+            Track wallets from the Whale Feed
           </p>
         </div>
         <button
@@ -169,7 +169,7 @@ export default function TrackerPage() {
           className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md border border-border hover:bg-muted transition-colors"
         >
           <Plus className="h-4 w-4" />
-          Wallet hinzufügen
+          Add wallet
         </button>
       </div>
 
@@ -180,7 +180,7 @@ export default function TrackerPage() {
             value={input}
             onChange={(e) => { setInput(e.target.value); setInputError(false); }}
             onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            placeholder="0x... Wallet-Adresse"
+            placeholder="0x... wallet address"
             className={`flex-1 font-mono text-sm px-3 py-2 rounded-md border bg-background outline-none focus:border-primary transition-colors ${
               inputError ? "border-red-500" : "border-border"
             }`}
@@ -189,7 +189,7 @@ export default function TrackerPage() {
             onClick={handleAdd}
             className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
           >
-            Hinzufügen
+            Add
           </button>
         </div>
       )}
@@ -203,11 +203,11 @@ export default function TrackerPage() {
       ) : wallets.length === 0 ? (
         <div className="text-center py-20 text-muted-foreground">
           <p className="text-4xl mb-3">🐋</p>
-          <p className="font-medium">Noch keine Wallets im Tracker</p>
+          <p className="font-medium">No wallets tracked yet</p>
           <p className="text-sm mt-1">
-            Füge sie aus dem{" "}
+            Add them from the{" "}
             <a href="/whales" className="text-primary hover:underline">Whale Feed</a>{" "}
-            hinzu oder gib eine Adresse manuell ein
+            or enter an address manually
           </p>
         </div>
       ) : (

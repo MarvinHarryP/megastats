@@ -168,7 +168,7 @@ export function WhaleFeed({ initialTxs }: Props) {
         <div>
           <h1 className="text-2xl font-bold">🐋 Whale Watcher</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Größte Transaktionen auf MegaETH — live
+            Biggest transactions on MegaETH — live
           </p>
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -177,7 +177,7 @@ export function WhaleFeed({ initialTxs }: Props) {
             Live
           </span>
           {lastUpdate && (
-            <span>· aktualisiert {formatDistanceToNow(lastUpdate, { addSuffix: true })}</span>
+            <span>· updated {formatDistanceToNow(lastUpdate, { addSuffix: true })}</span>
           )}
         </div>
       </div>
@@ -209,8 +209,8 @@ export function WhaleFeed({ initialTxs }: Props) {
       ) : txs.length === 0 ? (
         <div className="text-center py-20 text-muted-foreground">
           <p className="text-4xl mb-3">🌊</p>
-          <p className="font-medium">Keine Transaktionen über {formatUsd(min)} gefunden</p>
-          <p className="text-sm mt-1">Versuche einen niedrigeren Filter</p>
+          <p className="font-medium">No transactions above {formatUsd(min)} found</p>
+          <p className="text-sm mt-1">Try a lower filter</p>
         </div>
       ) : (
         <div className="space-y-1.5">
