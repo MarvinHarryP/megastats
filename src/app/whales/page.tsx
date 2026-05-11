@@ -53,8 +53,21 @@ function TrackButton({ address }: { address: string }) {
   );
 }
 
+const CACHE_KEY = "megastats_whales_feed";
+
+function loadCached(): WhaleTx[] {
+  try {
+    const raw = sessionStorage.getItem(CACHE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveCached(txs: WhaleTx[]) {
+  try { sessionStorage.setItem(CACHE_KEY, JSON.stringify(txs)); } catch {}
+}
+
 export default function WhalesPage() {
-  const [txs, setTxs] = useState<WhaleTx[]>([]);
+  const [txs, setTxs] = useState<WhaleTx[]>(() => loadCached());
   const [min, setMin] = useState(1_000);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [loading, setLoading] = useState(true);
@@ -82,7 +95,9 @@ export default function WhalesPage() {
             merged.push(tx);
           }
         }
-        return merged.sort((a, b) => b.usdValue - a.usdValue).slice(0, 50);
+        const sorted = merged.sort((a, b) => b.usdValue - a.usdValue).slice(0, 50);
+        saveCached(sorted);
+        return sorted;
       });
       setLastUpdate(new Date());
     } catch {}
@@ -91,8 +106,10 @@ export default function WhalesPage() {
 
   useEffect(() => {
     seenHashes.current.clear();
-    setTxs([]);
-    setLoading(true);
+    // Keep cached data visible while new data loads
+    const cached = loadCached();
+    setTxs(cached);
+    setLoading(cached.length === 0);
     fetchFeed();
     const interval = setInterval(fetchFeed, 5_000);
     return () => clearInterval(interval);
