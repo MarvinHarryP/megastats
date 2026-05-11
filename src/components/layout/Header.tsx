@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Menu, X } from "lucide-react";
+import { Search, Menu, X, Sun, Moon } from "lucide-react";
+import { useTheme } from "next-themes";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { isValidAddress } from "@/lib/utils";
@@ -13,6 +14,9 @@ export function Header() {
   const [value, setValue] = useState("");
   const [error, setError] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,6 +78,17 @@ export function Header() {
         >
           👀 Tracker
         </a>
+
+        {/* Dark mode toggle */}
+        {mounted && (
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="p-1.5 rounded-md hover:bg-muted transition-colors shrink-0 text-muted-foreground hover:text-foreground"
+            aria-label="Toggle dark mode"
+          >
+            {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+          </button>
+        )}
 
         {/* Mobile hamburger button */}
         <button
