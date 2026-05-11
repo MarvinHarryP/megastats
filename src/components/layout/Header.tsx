@@ -59,6 +59,20 @@ export function Header() {
           🏆 Leaderboard
         </a>
 
+        <a
+          href="/whales"
+          className="hidden sm:flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/60 transition-colors shrink-0"
+        >
+          🐋 Whales
+        </a>
+
+        <a
+          href="/tracker"
+          className="hidden sm:flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-400 hover:bg-purple-200 dark:hover:bg-purple-900/60 transition-colors shrink-0"
+        >
+          👀 Tracker
+        </a>
+
         <div className="shrink-0">
           <WalletConnectButton />
         </div>
