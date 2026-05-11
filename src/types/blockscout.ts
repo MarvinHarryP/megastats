@@ -54,7 +54,8 @@ export interface BlockscoutTokenHolding {
     name: string;
     decimals: string | null;
     exchange_rate: string | null;
-    address: string;
+    address?: string;
+    address_hash?: string; // actual field returned by Blockscout API
   };
   value: string;
 }

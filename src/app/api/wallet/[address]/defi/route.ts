@@ -33,7 +33,8 @@ export async function GET(
     const positions: DeFiPosition[] = [];
 
     for (const h of holdings) {
-      const info = lookupProtocol(h.token.address, h.token.symbol, h.token.name);
+      const tokenAddress = (h.token.address_hash ?? h.token.address ?? "").toLowerCase();
+      const info = lookupProtocol(tokenAddress, h.token.symbol, h.token.name);
       if (!info) continue;
 
       let amount = 0;
@@ -56,7 +57,7 @@ export async function GET(
         url: info.url,
         symbol: h.token.symbol,
         name: h.token.name,
-        address: h.token.address,
+        address: tokenAddress,
         amount,
         usdValue,
       });

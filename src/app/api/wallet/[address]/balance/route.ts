@@ -51,7 +51,7 @@ export async function GET(
         return {
           symbol: h.token.symbol,
           name: h.token.name,
-          address: h.token.address,
+          address: (h.token.address_hash ?? h.token.address ?? "").toLowerCase(),
           amount,
           usdValue: rate > 0 ? amount * rate : null,
           exchangeRate: rate > 0 ? rate : null,
