@@ -7,11 +7,21 @@ export interface ProtocolInfo {
   icon: string;
   color: string;   // Tailwind color: "blue" | "green" | "orange" | "purple" | "fuchsia" | "teal" | "yellow" | "gray"
   url?: string;
+  priceHint?: "usdm" | "eth"; // fallback price source when exchange_rate is null
 }
+
+// DeFiLlama icon slugs for known protocols
+export const PROTOCOL_LOGOS: Record<string, string> = {
+  "GMX":           "https://icons.llamao.fi/icons/protocols/gmx?w=48&h=48",
+  "Gains Network": "https://icons.llamao.fi/icons/protocols/gains-network?w=48&h=48",
+  "Aave":          "https://icons.llamao.fi/icons/protocols/aave?w=48&h=48",
+  "Kumbaya":       "https://icons.llamao.fi/icons/protocols/kumbaya?w=48&h=48",
+  "Prism":         "https://icons.llamao.fi/icons/protocols/prism?w=48&h=48",
+};
 
 const REGISTRY: Record<string, ProtocolInfo> = {
   // ── GMX ─────────────────────────────────────────────────────────────────
-  "0x3782d91c5888de31f627495e6aaac3f09499fe72": { protocol: "GMX", type: "Liquidity Vault", icon: "🔵", color: "blue", url: "https://app.gmx.io" },
+  "0x3782d91c5888de31f627495e6aaac3f09499fe72": { protocol: "GMX", type: "Liquidity Vault", icon: "🔵", color: "blue", url: "https://app.gmx.io", priceHint: "usdm" },
   "0x9b1b72720f6d277f3b1e607a0c5fab1b300248b1": { protocol: "GMX", type: "GM Market",       icon: "🔵", color: "blue", url: "https://app.gmx.io" },
   "0x1b997cb4841c4cb360e384192ffd7fb26eb10e5f": { protocol: "GMX", type: "GM Market",       icon: "🔵", color: "blue", url: "https://app.gmx.io" },
   "0xc5c9b5e23810565763de41144741477eecb25e2e": { protocol: "GMX", type: "GM Market",       icon: "🔵", color: "blue", url: "https://app.gmx.io" },
@@ -20,11 +30,11 @@ const REGISTRY: Record<string, ProtocolInfo> = {
   "0xbc7edfa7491cbff317a65788e0e0cd89e91ec8a7": { protocol: "GMX", type: "GM Market",       icon: "🔵", color: "blue", url: "https://app.gmx.io" },
 
   // ── Gains Network ────────────────────────────────────────────────────────
-  "0x46344456f130e9dcdea7f98cdb0e02fb9f4ab72d": { protocol: "Gains Network", type: "Staked USDM", icon: "📈", color: "green", url: "https://gains.trade" },
+  "0x46344456f130e9dcdea7f98cdb0e02fb9f4ab72d": { protocol: "Gains Network", type: "Staked USDM", icon: "📈", color: "green", url: "https://gains.trade", priceHint: "usdm" },
   "0x551dfe38994ec53c9e7e18084d73893225eea3bf": { protocol: "Gains Network", type: "GNS Token",   icon: "📈", color: "green", url: "https://gains.trade" },
 
   // ── USDm Yield ───────────────────────────────────────────────────────────
-  "0x2ea493384f42d7ea78564f3ef4c86986eab4a890": { protocol: "USDm", type: "Yield Position", icon: "🌾", color: "yellow", url: "https://usdm.fi" },
+  "0x2ea493384f42d7ea78564f3ef4c86986eab4a890": { protocol: "USDm", type: "Yield Position", icon: "🌾", color: "yellow", url: "https://usdm.fi", priceHint: "usdm" },
 
   // ── Kumbaya LP positions (cowKumbaya*) ───────────────────────────────────
   "0xc845eac583558ef89315917bba7459e648030f0a": { protocol: "Kumbaya", type: "WETH/USDm LP",       icon: "🔄", color: "orange", url: "https://kumbaya.exchange" },

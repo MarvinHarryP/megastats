@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { ChevronDown, ExternalLink } from "lucide-react";
 import type { DeFiPosition } from "@/app/api/wallet/[address]/defi/route";
-import { PROTOCOL_COLORS } from "@/lib/defi-registry";
+import { PROTOCOL_COLORS, PROTOCOL_LOGOS } from "@/lib/defi-registry";
 
 interface Props {
   address: string;
@@ -35,8 +35,25 @@ function positionLabel(count: number): string {
   return count === 1 ? "1 position" : `${count} positions`;
 }
 
-function ProtocolIcon({ icon, color }: { icon: string; color: string }) {
+function ProtocolIcon({ protocol, icon, color }: { protocol: string; icon: string; color: string }) {
+  const [imgError, setImgError] = useState(false);
+  const logoUrl = PROTOCOL_LOGOS[protocol];
   const bg = PROTOCOL_COLORS[color] ?? PROTOCOL_COLORS.gray;
+
+  if (logoUrl && !imgError) {
+    return (
+      <div className="w-10 h-10 rounded-full overflow-hidden shrink-0 border border-border/50 bg-muted flex items-center justify-center">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={logoUrl}
+          alt={protocol}
+          className="w-full h-full object-cover"
+          onError={() => setImgError(true)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className={`w-10 h-10 rounded-full ${bg} flex items-center justify-center shrink-0 text-lg shadow-sm`}>
       {icon}
@@ -53,7 +70,7 @@ function ProtocolRow({ group }: { group: ProtocolGroup }) {
         onClick={() => setOpen((v) => !v)}
         className="w-full flex items-center gap-3 px-4 py-3.5 hover:bg-muted/30 transition-colors"
       >
-        <ProtocolIcon icon={group.icon} color={group.color} />
+        <ProtocolIcon protocol={group.protocol} icon={group.icon} color={group.color} />
 
         <div className="flex-1 text-left min-w-0">
           <p className="font-semibold text-sm">{group.protocol}</p>

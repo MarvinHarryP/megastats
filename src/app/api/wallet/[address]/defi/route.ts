@@ -4,6 +4,7 @@ import { lookupProtocol } from "@/lib/defi-registry";
 import type { BlockscoutTokenHolding } from "@/types/blockscout";
 
 const BASE = "https://megaeth.blockscout.com/api/v2";
+const USDM_ADDRESS = "0xfafddbb3fc7688494971a79cc65dca3ef82079e7";
 
 export interface DeFiPosition {
   protocol: string;
@@ -29,7 +30,13 @@ export async function GET(
   }
 
   try {
-    const holdings = await fetchAllTokenHoldings(address);
+    // Fetch token holdings + USDm price in parallel
+    const [holdings, usdmPrice] = await Promise.all([
+      fetchAllTokenHoldings(address),
+      fetchUsdmPrice(),
+    ]);
+
+    const ethPrice = await fetchEthPrice();
 
     const positions: DeFiPosition[] = [];
 
@@ -48,8 +55,16 @@ export async function GET(
       }
       if (amount <= 0) continue;
 
+      // Try exchange_rate first, then priceHint fallback
+      let usdValue: number | null = null;
       const rate = parseFloat(h.token.exchange_rate ?? "0");
-      const usdValue = rate > 0 ? amount * rate : null;
+      if (rate > 0) {
+        usdValue = amount * rate;
+      } else if (info.priceHint === "usdm" && usdmPrice > 0) {
+        usdValue = amount * usdmPrice;
+      } else if (info.priceHint === "eth" && ethPrice > 0) {
+        usdValue = amount * ethPrice;
+      }
 
       positions.push({
         protocol: info.protocol,
@@ -65,12 +80,31 @@ export async function GET(
       });
     }
 
-    // Sort by USD value desc, unknowns last
     positions.sort((a, b) => (b.usdValue ?? -1) - (a.usdValue ?? -1));
 
     return NextResponse.json({ positions, total: positions.length });
   } catch {
     return NextResponse.json({ positions: [], total: 0 });
+  }
+}
+
+async function fetchUsdmPrice(): Promise<number> {
+  try {
+    const res = await fetch(`${BASE}/tokens/${USDM_ADDRESS}`, { next: { revalidate: 300 } });
+    const data = await res.json();
+    return parseFloat(data.exchange_rate ?? "0");
+  } catch {
+    return 0.999; // fallback
+  }
+}
+
+async function fetchEthPrice(): Promise<number> {
+  try {
+    const res = await fetch(`${BASE}/stats`, { next: { revalidate: 300 } });
+    const data = await res.json();
+    return parseFloat(data.coin_price ?? "0");
+  } catch {
+    return 0;
   }
 }
 
