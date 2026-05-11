@@ -21,7 +21,16 @@ export function RefreshButton({ address, lastUpdatedAt }: RefreshButtonProps) {
     setLoading(true);
     try {
       const res = await fetch(`/api/wallet/${address}/refresh`, { method: "POST" });
-      if (!res.ok) throw new Error("Refresh failed");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        if (res.status === 429 && body.retryAfter) {
+          const mins = Math.ceil(body.retryAfter / 60);
+          toast.error(`Please wait ${mins} minute${mins !== 1 ? "s" : ""} before refreshing.`);
+        } else {
+          toast.error("Refresh failed. Try again.");
+        }
+        return;
+      }
       await queryClient.invalidateQueries({ queryKey: ["wallet", address] });
       await queryClient.invalidateQueries({ queryKey: ["transactions", address] });
       toast.success("Data refreshed");

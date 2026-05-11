@@ -5,8 +5,9 @@ import { getPositionAmounts, sqrtPriceX96ToPrice } from "@/lib/v3-math";
 
 // MegaETH mainnet — multiple RPCs with automatic fallback
 const MEGAETH_RPCS = [
-  "https://megaeth.gateway.tenderly.co",  // Tenderly — reliable
-  "https://4326.rpc.thirdweb.com",         // Thirdweb — backup
+  "https://mainnet.megaeth.com/rpc",         // MegaETH official public RPC
+  "https://megaeth.gateway.tenderly.co",    // Tenderly — secondary
+  "https://4326.rpc.thirdweb.com",          // Thirdweb — last resort
 ];
 
 const megaeth = {
@@ -107,6 +108,10 @@ export async function GET(
   })();
 
   await Promise.race([work, deadline]);
+
+  if (errors.length > 0) {
+    console.error("[v3positions] RPC errors:", errors);
+  }
 
   return NextResponse.json({ positions: allPositions });
 }
