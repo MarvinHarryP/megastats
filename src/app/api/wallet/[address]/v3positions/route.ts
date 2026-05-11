@@ -11,6 +11,11 @@ const megaeth = {
   name: "MegaETH",
   nativeCurrency: { name: "ETH", symbol: "ETH", decimals: 18 },
   rpcUrls: { default: { http: [MEGAETH_RPC] } },
+  contracts: {
+    multicall3: {
+      address: "0xcA11bde05977b3631167028862bE2a173976CA11" as `0x${string}`,
+    },
+  },
 } as const;
 
 // Known V3 Dexes on MegaETH
