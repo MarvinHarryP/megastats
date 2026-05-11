@@ -1,17 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formatDistanceToNow } from "date-fns";
-import { X, Pencil, Check, Plus, ExternalLink } from "lucide-react";
+import { X, Pencil, Check, Plus, ExternalLink, Activity } from "lucide-react";
 import { useWatchlist } from "@/hooks/useWatchlist";
 import { isValidAddress, formatAddress } from "@/lib/utils";
 
+interface WalletSummary {
+  txCount: number;
+  volumeUsd: number;
+  activeDays: number;
+  lastTxAt: string | null;
+  lastFetchedAt: string;
+}
+
+function formatUsd(v: number) {
+  if (v >= 1_000_000) return "$" + (v / 1_000_000).toFixed(2) + "M";
+  if (v >= 1_000) return "$" + (v / 1_000).toFixed(1) + "K";
+  return "$" + v.toFixed(0);
+}
+
 function TrackerCard({
   entry,
+  summary,
   onRemove,
   onRename,
 }: {
   entry: { address: string; label?: string; addedAt: number };
+  summary?: WalletSummary;
   onRemove: () => void;
   onRename: (label: string) => void;
 }) {
@@ -24,90 +40,117 @@ function TrackerCard({
   };
 
   return (
-    <div className="rounded-xl border bg-card px-4 py-3.5 flex items-center gap-3">
-      {/* Label / address */}
-      <div className="flex-1 min-w-0">
-        {editing ? (
-          <input
-            autoFocus
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") save();
-              if (e.key === "Escape") setEditing(false);
-            }}
-            placeholder="Label vergeben…"
-            className="w-full text-sm bg-transparent border-b border-primary outline-none pb-0.5"
-          />
-        ) : (
-          <p className="text-sm font-semibold truncate">
-            {entry.label || formatAddress(entry.address, 10)}
+    <div className="rounded-xl border bg-card overflow-hidden">
+      {/* Top row */}
+      <div className="flex items-center gap-3 px-4 py-3">
+        <div className="flex-1 min-w-0">
+          {editing ? (
+            <input
+              autoFocus
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") save();
+                if (e.key === "Escape") setEditing(false);
+              }}
+              placeholder="Label vergeben…"
+              className="w-full text-sm bg-transparent border-b border-primary outline-none pb-0.5"
+            />
+          ) : (
+            <p className="text-sm font-semibold truncate">
+              {entry.label || formatAddress(entry.address, 10)}
+            </p>
+          )}
+          <p className="text-xs font-mono text-muted-foreground truncate mt-0.5">
+            {formatAddress(entry.address, 12)}
           </p>
-        )}
-        <div className="flex items-center gap-2 mt-0.5">
-          <p className="text-xs font-mono text-muted-foreground truncate">
-            {formatAddress(entry.address, 10)}
-          </p>
-          <span className="text-xs text-muted-foreground">·</span>
-          <span className="text-xs text-muted-foreground">
-            hinzugefügt {formatDistanceToNow(new Date(entry.addedAt), { addSuffix: true })}
-          </span>
+        </div>
+
+        <div className="flex items-center gap-1 shrink-0">
+          <a
+            href={`/${entry.address}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            title="MegaStats öffnen"
+          >
+            <ExternalLink className="h-3.5 w-3.5" />
+          </a>
+          {editing ? (
+            <button onClick={save} className="p-1.5 rounded hover:bg-muted transition-colors text-green-500">
+              <Check className="h-3.5 w-3.5" />
+            </button>
+          ) : (
+            <button
+              onClick={() => { setDraft(entry.label ?? ""); setEditing(true); }}
+              className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+          )}
+          <button
+            onClick={onRemove}
+            className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-red-400"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-1.5 shrink-0">
-        <a
-          href={`/${entry.address}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-          title="MegaStats öffnen"
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-        </a>
-
-        {editing ? (
-          <button
-            onClick={save}
-            className="p-1.5 rounded hover:bg-muted transition-colors text-green-500"
-          >
-            <Check className="h-3.5 w-3.5" />
-          </button>
-        ) : (
-          <button
-            onClick={() => { setDraft(entry.label ?? ""); setEditing(true); }}
-            className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground"
-            title="Label bearbeiten"
-          >
-            <Pencil className="h-3.5 w-3.5" />
-          </button>
-        )}
-
-        <button
-          onClick={onRemove}
-          className="p-1.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-red-400"
-          title="Entfernen"
-        >
-          <X className="h-3.5 w-3.5" />
-        </button>
-      </div>
+      {/* Stats row */}
+      {summary ? (
+        <div className="border-t grid grid-cols-3 divide-x bg-muted/20">
+          <div className="px-4 py-2 text-center">
+            <p className="text-xs text-muted-foreground">Transaktionen</p>
+            <p className="text-sm font-bold tabular-nums">{summary.txCount.toLocaleString()}</p>
+          </div>
+          <div className="px-4 py-2 text-center">
+            <p className="text-xs text-muted-foreground">Volume</p>
+            <p className="text-sm font-bold tabular-nums text-primary">{formatUsd(summary.volumeUsd)}</p>
+          </div>
+          <div className="px-4 py-2 text-center">
+            <p className="text-xs text-muted-foreground">Letzte Aktivität</p>
+            <p className="text-sm font-bold tabular-nums">
+              {summary.lastTxAt
+                ? formatDistanceToNow(new Date(summary.lastTxAt), { addSuffix: true })
+                : "—"}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="border-t px-4 py-2 bg-muted/20 flex items-center gap-2 text-xs text-muted-foreground">
+          <Activity className="h-3 w-3 animate-pulse" />
+          Wallet noch nicht in MegaStats gecacht — öffne das Profil einmal um Daten zu laden
+        </div>
+      )}
     </div>
   );
 }
 
 export default function TrackerPage() {
   const { wallets, hydrated, add, remove, rename } = useWatchlist();
+  const [summaries, setSummaries] = useState<Record<string, WalletSummary>>({});
   const [input, setInput] = useState("");
   const [inputError, setInputError] = useState(false);
   const [showInput, setShowInput] = useState(false);
 
+  // Fetch summaries for all tracked wallets
+  useEffect(() => {
+    if (!hydrated || wallets.length === 0) return;
+    const addresses = wallets.map((w) => w.address);
+    fetch("/api/wallets/summary", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ addresses }),
+    })
+      .then((r) => r.json())
+      .then((data) => setSummaries(data.summaries ?? {}))
+      .catch(() => {});
+  }, [hydrated, wallets]);
+
   const handleAdd = () => {
     const addr = input.trim().toLowerCase();
-    if (!isValidAddress(addr)) {
-      setInputError(true);
-      return;
-    }
+    if (!isValidAddress(addr)) { setInputError(true); return; }
     add(addr);
     setInput("");
     setInputError(false);
@@ -116,7 +159,6 @@ export default function TrackerPage() {
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">
-      {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">👀 Mein Tracker</h1>
@@ -133,7 +175,6 @@ export default function TrackerPage() {
         </button>
       </div>
 
-      {/* Manual add input */}
       {showInput && (
         <div className="mb-4 flex gap-2">
           <input
@@ -155,11 +196,10 @@ export default function TrackerPage() {
         </div>
       )}
 
-      {/* Wallet list */}
       {!hydrated ? (
         <div className="space-y-2">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-16 rounded-xl border bg-muted/30 animate-pulse" />
+            <div key={i} className="h-24 rounded-xl border bg-muted/30 animate-pulse" />
           ))}
         </div>
       ) : wallets.length === 0 ? (
@@ -168,9 +208,7 @@ export default function TrackerPage() {
           <p className="font-medium">Noch keine Wallets im Tracker</p>
           <p className="text-sm mt-1">
             Füge sie aus dem{" "}
-            <a href="/whales" className="text-primary hover:underline">
-              Whale Feed
-            </a>{" "}
+            <a href="/whales" className="text-primary hover:underline">Whale Feed</a>{" "}
             hinzu oder gib eine Adresse manuell ein
           </p>
         </div>
@@ -183,6 +221,7 @@ export default function TrackerPage() {
               <TrackerCard
                 key={entry.address}
                 entry={entry}
+                summary={summaries[entry.address]}
                 onRemove={() => remove(entry.address)}
                 onRename={(label) => rename(entry.address, label)}
               />
