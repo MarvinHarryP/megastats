@@ -16,6 +16,7 @@ import { DashboardClient } from "./DashboardClient";
 import { BalanceCard } from "@/components/stats/BalanceCard";
 import { NFTGallery } from "@/components/stats/NFTGallery";
 import { DeFiPositions } from "@/components/stats/DeFiPositions";
+import { fetchDefiPositions } from "@/app/api/wallet/[address]/defi/route";
 
 interface Props {
   params: { address: string };
@@ -37,8 +38,12 @@ export default async function AddressPage({ params }: Props) {
   let data;
   let rank: number | null = null;
   let totalTracked = 0;
+  let initialDefiPositions;
   try {
-    data = await getOrSyncWallet(address);
+    [data, initialDefiPositions] = await Promise.all([
+      getOrSyncWallet(address),
+      fetchDefiPositions(address).catch(() => []),
+    ]);
     const [above, total] = await Promise.all([
       prisma.walletCache.count({ where: { txCount: { gt: data.stats.txCount } } }),
       prisma.walletCache.count({ where: { txCount: { gt: 0 } } }),
@@ -92,7 +97,7 @@ export default async function AddressPage({ params }: Props) {
 
       <BalanceCard address={address} />
 
-      <DeFiPositions address={address} />
+      <DeFiPositions address={address} initialDefiPositions={initialDefiPositions} />
 
       <NFTGallery address={address} />
 

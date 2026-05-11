@@ -19,6 +19,62 @@ export interface DeFiPosition {
   usdValue: number | null;
 }
 
+/** Core logic — can be called directly from server components */
+export async function fetchDefiPositions(address: string): Promise<DeFiPosition[]> {
+  // Fetch token holdings + USDm price in parallel
+  const [holdings, usdmPrice] = await Promise.all([
+    fetchAllTokenHoldings(address),
+    fetchUsdmPrice(),
+  ]);
+
+  const ethPrice = await fetchEthPrice();
+
+  const positions: DeFiPosition[] = [];
+
+  for (const h of holdings) {
+    const tokenAddress = (h.token.address_hash ?? h.token.address ?? "").toLowerCase();
+    const info = lookupProtocol(tokenAddress, h.token.symbol, h.token.name);
+    if (!info) continue;
+
+    let amount = 0;
+    try {
+      const decimals = parseInt(h.token.decimals ?? "18", 10);
+      const raw = h.value?.replace(/[^0-9]/g, "") || "0";
+      amount = Number(BigInt(raw)) / Math.pow(10, decimals);
+    } catch {
+      continue;
+    }
+    if (amount <= 0) continue;
+
+    // Try exchange_rate first, then priceHint fallback
+    let usdValue: number | null = null;
+    const rate = parseFloat(h.token.exchange_rate ?? "0");
+    if (rate > 0) {
+      usdValue = amount * rate;
+    } else if (info.priceHint === "usdm" && usdmPrice > 0) {
+      usdValue = amount * usdmPrice;
+    } else if (info.priceHint === "eth" && ethPrice > 0) {
+      usdValue = amount * ethPrice;
+    }
+
+    positions.push({
+      protocol: info.protocol,
+      type: info.type,
+      icon: info.icon,
+      color: info.color,
+      url: info.url,
+      symbol: h.token.symbol,
+      name: h.token.name,
+      address: tokenAddress,
+      amount,
+      usdValue,
+    });
+  }
+
+  positions.sort((a, b) => (b.usdValue ?? -1) - (a.usdValue ?? -1));
+  return positions;
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: { address: string } }
@@ -30,58 +86,7 @@ export async function GET(
   }
 
   try {
-    // Fetch token holdings + USDm price in parallel
-    const [holdings, usdmPrice] = await Promise.all([
-      fetchAllTokenHoldings(address),
-      fetchUsdmPrice(),
-    ]);
-
-    const ethPrice = await fetchEthPrice();
-
-    const positions: DeFiPosition[] = [];
-
-    for (const h of holdings) {
-      const tokenAddress = (h.token.address_hash ?? h.token.address ?? "").toLowerCase();
-      const info = lookupProtocol(tokenAddress, h.token.symbol, h.token.name);
-      if (!info) continue;
-
-      let amount = 0;
-      try {
-        const decimals = parseInt(h.token.decimals ?? "18", 10);
-        const raw = h.value?.replace(/[^0-9]/g, "") || "0";
-        amount = Number(BigInt(raw)) / Math.pow(10, decimals);
-      } catch {
-        continue;
-      }
-      if (amount <= 0) continue;
-
-      // Try exchange_rate first, then priceHint fallback
-      let usdValue: number | null = null;
-      const rate = parseFloat(h.token.exchange_rate ?? "0");
-      if (rate > 0) {
-        usdValue = amount * rate;
-      } else if (info.priceHint === "usdm" && usdmPrice > 0) {
-        usdValue = amount * usdmPrice;
-      } else if (info.priceHint === "eth" && ethPrice > 0) {
-        usdValue = amount * ethPrice;
-      }
-
-      positions.push({
-        protocol: info.protocol,
-        type: info.type,
-        icon: info.icon,
-        color: info.color,
-        url: info.url,
-        symbol: h.token.symbol,
-        name: h.token.name,
-        address: tokenAddress,
-        amount,
-        usdValue,
-      });
-    }
-
-    positions.sort((a, b) => (b.usdValue ?? -1) - (a.usdValue ?? -1));
-
+    const positions = await fetchDefiPositions(address);
     return NextResponse.json({ positions, total: positions.length });
   } catch {
     return NextResponse.json({ positions: [], total: 0 });

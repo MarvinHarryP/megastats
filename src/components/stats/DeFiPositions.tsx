@@ -8,6 +8,7 @@ import { PROTOCOL_COLORS, PROTOCOL_LOGOS } from "@/lib/defi-registry";
 
 interface Props {
   address: string;
+  initialDefiPositions?: DeFiPosition[];
 }
 
 // Unified position row for rendering
@@ -179,10 +180,30 @@ function v3ToUnified(p: V3Position): UnifiedPosition {
   };
 }
 
-export function DeFiPositions({ address }: Props) {
-  const [groups, setGroups] = useState<ProtocolGroup[]>([]);
+function buildMap(positions: DeFiPosition[]): Map<string, ProtocolGroup> {
+  const map = new Map<string, ProtocolGroup>();
+  for (const p of positions) {
+    if (!map.has(p.protocol)) {
+      map.set(p.protocol, {
+        protocol: p.protocol, icon: p.icon, color: p.color ?? "gray",
+        url: p.url, positions: [], totalUsd: 0,
+      });
+    }
+    const g = map.get(p.protocol)!;
+    g.positions.push(defiToUnified(p));
+    g.totalUsd += p.usdValue ?? 0;
+  }
+  return map;
+}
+
+export function DeFiPositions({ address, initialDefiPositions }: Props) {
+  // If we have server-pre-fetched ERC-20 positions, render them immediately
+  const initialMap = initialDefiPositions ? buildMap(initialDefiPositions) : new Map<string, ProtocolGroup>();
+  const initialSorted = Array.from(initialMap.values()).sort((a, b) => b.totalUsd - a.totalUsd);
+
+  const [groups, setGroups] = useState<ProtocolGroup[]>(initialSorted);
   const [loading, setLoading] = useState(true);
-  const [totalUsd, setTotalUsd] = useState(0);
+  const [totalUsd, setTotalUsd] = useState(initialSorted.reduce((s, g) => s + g.totalUsd, 0));
 
   useEffect(() => {
     // Fetch with abort timeout so a hanging RPC never blocks the UI
@@ -194,53 +215,43 @@ export function DeFiPositions({ address }: Props) {
         .finally(() => clearTimeout(t));
     }
 
-    // Fetch both token-based and V3 LP positions in parallel
-    Promise.allSettled([
-      fetchWithTimeout(`/api/wallet/${address}/defi`, 10_000),
-      fetchWithTimeout(`/api/wallet/${address}/v3positions`, 15_000),
-    ]).then(([defiResult, v3Result]) => {
-      const map = new Map<string, ProtocolGroup>();
+    // Start with the server-pre-fetched ERC-20 positions (already in state),
+    // then fetch V3 LP positions client-side and merge in
+    fetchWithTimeout(`/api/wallet/${address}/v3positions`, 15_000)
+      .then((v3Data) => {
+        const v3Positions: V3Position[] = v3Data?.positions ?? [];
 
-      // Add token-based DeFi positions
-      if (defiResult.status === "fulfilled") {
-        const positions: DeFiPosition[] = defiResult.value.positions ?? [];
-        for (const p of positions) {
-          if (!map.has(p.protocol)) {
-            map.set(p.protocol, {
-              protocol: p.protocol, icon: p.icon, color: p.color ?? "gray",
-              url: p.url, positions: [], totalUsd: 0,
-            });
+        setGroups((prev) => {
+          // Clone existing groups from server-side ERC-20 data
+          const map = new Map<string, ProtocolGroup>(
+            prev.map((g) => [g.protocol, { ...g, positions: [...g.positions] }])
+          );
+
+          for (const p of v3Positions) {
+            if (!map.has(p.protocol)) {
+              map.set(p.protocol, {
+                protocol: p.protocol, icon: p.icon, color: p.color,
+                url: p.url, positions: [], totalUsd: 0,
+              });
+            }
+            const g = map.get(p.protocol)!;
+            g.positions.push(v3ToUnified(p));
+            g.totalUsd += p.usdValue ?? 0;
           }
-          const g = map.get(p.protocol)!;
-          g.positions.push(defiToUnified(p));
-          g.totalUsd += p.usdValue ?? 0;
-        }
-      }
 
-      // Add V3 LP positions
-      if (v3Result.status === "fulfilled") {
-        const v3Positions: V3Position[] = v3Result.value.positions ?? [];
-        for (const p of v3Positions) {
-          if (!map.has(p.protocol)) {
-            map.set(p.protocol, {
-              protocol: p.protocol, icon: p.icon, color: p.color,
-              url: p.url, positions: [], totalUsd: 0,
-            });
-          }
-          const g = map.get(p.protocol)!;
-          g.positions.push(v3ToUnified(p));
-          g.totalUsd += p.usdValue ?? 0;
-        }
-      }
-
-      const sorted = Array.from(map.values()).sort((a, b) => b.totalUsd - a.totalUsd);
-      setGroups(sorted);
-      setTotalUsd(sorted.reduce((s, g) => s + g.totalUsd, 0));
-      setLoading(false);
-    });
+          const sorted = Array.from(map.values()).sort((a, b) => b.totalUsd - a.totalUsd);
+          setTotalUsd(sorted.reduce((s, g) => s + g.totalUsd, 0));
+          return sorted;
+        });
+      })
+      .catch(() => { /* V3 fetch failed — keep ERC-20 positions */ })
+      .finally(() => setLoading(false));
   }, [address]);
 
-  if (loading || groups.length === 0) return null;
+  // Show nothing only if we have no data at all (no pre-fetched + still loading V3)
+  if (groups.length === 0 && loading) return null;
+  // If we got data from server but there's nothing, don't render
+  if (groups.length === 0) return null;
 
   return (
     <div className="space-y-2">

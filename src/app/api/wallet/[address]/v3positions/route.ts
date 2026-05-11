@@ -108,7 +108,7 @@ export async function GET(
 
   await Promise.race([work, deadline]);
 
-  return NextResponse.json({ positions: allPositions, _debug: errors });
+  return NextResponse.json({ positions: allPositions });
 }
 
 async function fetchDexPositions(
