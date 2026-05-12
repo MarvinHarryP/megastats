@@ -6,7 +6,8 @@ import type {
 } from "@/types/blockscout";
 
 const BASE = "https://megaeth.blockscout.com/api/v2";
-const MAX_TXS = 5000;
+const MAX_TXS = 2000;
+const REQUEST_TIMEOUT_MS = 8000;
 
 export async function fetchAllTransactions(address: string): Promise<BlockscoutTx[]> {
   const all: BlockscoutTx[] = [];
@@ -20,14 +21,18 @@ export async function fetchAllTransactions(address: string): Promise<BlockscoutT
       }
     }
 
-    const res = await fetch(url.toString(), { cache: "no-store" });
-    if (!res.ok) {
-      throw new Error(`Blockscout error ${res.status}: ${await res.text()}`);
+    try {
+      const res = await fetch(url.toString(), {
+        cache: "no-store",
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+      if (!res.ok) break;
+      const data: BlockscoutTxResponse = await res.json();
+      all.push(...data.items);
+      nextPageParams = data.next_page_params ?? null;
+    } catch {
+      break; // timeout or network error — return what we have so far
     }
-
-    const data: BlockscoutTxResponse = await res.json();
-    all.push(...data.items);
-    nextPageParams = data.next_page_params ?? null;
 
     if (all.length >= MAX_TXS) break;
     if (nextPageParams) await new Promise((r) => setTimeout(r, 80));
@@ -50,13 +55,19 @@ export async function fetchAllTokenTransfers(
       }
     }
 
-    const res = await fetch(url.toString(), { cache: "no-store" });
-    if (!res.ok) break;
-
-    const data: BlockscoutTokenTransferResponse = await res.json();
-    if (!data.items) break;
-    all.push(...data.items);
-    nextPageParams = data.next_page_params ?? null;
+    try {
+      const res = await fetch(url.toString(), {
+        cache: "no-store",
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      });
+      if (!res.ok) break;
+      const data: BlockscoutTokenTransferResponse = await res.json();
+      if (!data.items) break;
+      all.push(...data.items);
+      nextPageParams = data.next_page_params ?? null;
+    } catch {
+      break; // timeout or network error — return what we have so far
+    }
 
     if (all.length >= MAX_TXS) break;
     if (nextPageParams) await new Promise((r) => setTimeout(r, 80));
