@@ -59,16 +59,19 @@ export async function forceRefreshWallet(address: string): Promise<StatsResponse
 }
 
 async function syncWallet(address: string): Promise<StatsResponse> {
-  const [rawTxs, tokenTransfers, ethPriceData] = await Promise.all([
+  const [rawTxs, tokenTransfers, ethPriceData, addressData] = await Promise.all([
     fetchAllTransactions(address),
     fetchAllTokenTransfers(address),
-    fetch("https://megaeth.blockscout.com/api/v2/stats", {
-      cache: "no-store",
-    })
+    fetch("https://megaeth.blockscout.com/api/v2/stats", { cache: "no-store" })
       .then((r) => r.json())
       .then((d) => parseFloat(d.coin_price ?? "0"))
       .catch(() => 0),
+    fetch(`https://megaeth.blockscout.com/api/v2/addresses/${address}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .catch(() => null),
   ]);
+
+  const realTxCount: number = addressData?.transactions_count ?? null;
 
   const { stats, dailyActivity } = computeStats(
     address,
@@ -76,6 +79,12 @@ async function syncWallet(address: string): Promise<StatsResponse> {
     tokenTransfers,
     ethPriceData
   );
+
+  // Override txCount with real value from Blockscout if available
+  if (realTxCount !== null && realTxCount > stats.txCount) {
+    stats.txCount = realTxCount;
+  }
+
   const maxBlock = rawTxs.reduce((m, tx) => Math.max(m, tx.block_number ?? 0), 0);
   const mappedTxs = rawTxs.map((tx) => classifyAndMapTx(tx, address));
 

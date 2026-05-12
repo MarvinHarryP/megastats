@@ -6,7 +6,7 @@ import type {
 } from "@/types/blockscout";
 
 const BASE = "https://megaeth.blockscout.com/api/v2";
-const MAX_TXS = 2000;
+const MAX_TXS = 500; // fetch last 500 txs max — real total comes from address endpoint
 const REQUEST_TIMEOUT_MS = 8000;
 
 export async function fetchAllTransactions(address: string): Promise<BlockscoutTx[]> {
