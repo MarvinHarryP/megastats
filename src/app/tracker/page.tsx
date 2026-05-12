@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { formatDistanceToNow } from "date-fns";
 import { X, Pencil, Check, Plus, ExternalLink, Activity } from "lucide-react";
 import { useWatchlist } from "@/hooks/useWatchlist";
@@ -133,7 +133,7 @@ export default function TrackerPage() {
   const [showInput, setShowInput] = useState(false);
 
   // Fetch summaries for all tracked wallets
-  useEffect(() => {
+  const fetchSummaries = useCallback(() => {
     if (!hydrated || wallets.length === 0) return;
     const addresses = wallets.map((w) => w.address);
     fetch("/api/wallets/summary", {
@@ -145,6 +145,19 @@ export default function TrackerPage() {
       .then((data) => setSummaries(data.summaries ?? {}))
       .catch(() => {});
   }, [hydrated, wallets]);
+
+  useEffect(() => {
+    fetchSummaries();
+  }, [fetchSummaries]);
+
+  // Re-fetch when user returns to this tab (e.g. after visiting a wallet profile)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") fetchSummaries();
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [fetchSummaries]);
 
   const handleAdd = () => {
     const addr = input.trim().toLowerCase();
