@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { fetchAllTransactions, fetchAllTokenTransfers } from "@/lib/blockscout";
+import { fetchAllTransactions, fetchAllTokenTransfers, fetchNewTransactions } from "@/lib/blockscout";
 import { computeStats, classifyAndMapTx } from "@/lib/stats";
 import type { StatsResponse } from "@/types/stats";
 
