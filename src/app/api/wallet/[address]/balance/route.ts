@@ -57,8 +57,35 @@ export async function GET(
           exchangeRate: rate > 0 ? rate : null,
         };
       })
-      .filter((t) => t.amount > 0)
-      .sort((a, b) => (b.usdValue ?? 0) - (a.usdValue ?? 0));
+      .filter((t) => t.amount > 0);
+
+    // Fallback: fetch missing prices from DexScreener
+    const missing = tokens.filter((t) => t.usdValue === null && t.address);
+    if (missing.length > 0) {
+      const addrs = missing.map((t) => t.address).join(",");
+      try {
+        const ds = await fetch(
+          `https://api.dexscreener.com/tokens/v1/megaeth/${addrs}`,
+          { cache: "no-store", signal: AbortSignal.timeout(3000) }
+        ).then((r) => r.json());
+        const priceMap: Record<string, number> = {};
+        if (Array.isArray(ds)) {
+          for (const pair of ds) {
+            const addr = (pair.baseToken?.address ?? "").toLowerCase();
+            const price = parseFloat(pair.priceUsd ?? "0");
+            if (addr && price > 0 && !priceMap[addr]) priceMap[addr] = price;
+          }
+        }
+        for (const token of tokens) {
+          if (token.usdValue === null && priceMap[token.address]) {
+            token.exchangeRate = priceMap[token.address];
+            token.usdValue = token.amount * priceMap[token.address];
+          }
+        }
+      } catch { /* DexScreener unavailable — keep null */ }
+    }
+
+    tokens.sort((a, b) => (b.usdValue ?? 0) - (a.usdValue ?? 0));
 
     const tokenUsd = tokens.reduce((sum, t) => sum + (t.usdValue ?? 0), 0);
 
