@@ -18,7 +18,15 @@ export async function getOrSyncWallet(address: string): Promise<StatsResponse> {
     return buildResponse(addr, cached, cached.dailyActivity);
   }
 
-  return syncWallet(addr);
+  try {
+    return await syncWallet(addr);
+  } catch (err) {
+    // Sync failed (timeout, rate-limit, etc.) — fall back to stale cache if available
+    if (cached) {
+      return buildResponse(addr, cached, cached.dailyActivity);
+    }
+    throw err;
+  }
 }
 
 export async function forceRefreshWallet(address: string): Promise<StatsResponse> {
