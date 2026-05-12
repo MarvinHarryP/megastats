@@ -19,14 +19,37 @@ export async function getOrSyncWallet(address: string): Promise<StatsResponse> {
   }
 
   try {
+    // If we have a cache, only fetch new txs since last known block (fast)
+    if (cached && cached.fetchedThrough > 0) {
+      return await incrementalSync(addr, cached.fetchedThrough);
+    }
+    // First-time load: full fetch
     return await syncWallet(addr);
   } catch (err) {
-    // Sync failed (timeout, rate-limit, etc.) — fall back to stale cache if available
-    if (cached) {
-      return buildResponse(addr, cached, cached.dailyActivity);
-    }
+    if (cached) return buildResponse(addr, cached, cached.dailyActivity);
     throw err;
   }
+}
+
+async function incrementalSync(address: string, sinceBlock: number): Promise<StatsResponse> {
+  // Only fetch txs newer than what we already have — typically just 1-2 pages
+  const newTxs = await fetchNewTransactions(address, sinceBlock);
+
+  if (newTxs.length === 0) {
+    // Nothing new — just bump the timestamp so TTL resets
+    await prisma.walletCache.update({
+      where: { id: address },
+      data: { lastFetchedAt: new Date() },
+    });
+    const cached = await prisma.walletCache.findUniqueOrThrow({
+      where: { id: address },
+      include: { dailyActivity: { orderBy: { date: "asc" } } },
+    });
+    return buildResponse(address, cached, cached.dailyActivity);
+  }
+
+  // New txs found — do a full sync so stats are always 100% correct
+  return await syncWallet(address);
 }
 
 export async function forceRefreshWallet(address: string): Promise<StatsResponse> {
