@@ -14,11 +14,34 @@ export default function Loading() {
           </div>
         </div>
 
-        {/* Status text */}
-        <div className="space-y-1">
-          <p className="text-lg font-semibold text-primary">Loading wallet data…</p>
-          <p className="text-xs text-muted-foreground">Scanning on-chain data via Blockscout</p>
-        </div>
+        {/* Rotating status messages — pure CSS, Server Component safe */}
+        {(() => {
+          const MESSAGES = [
+            "Fetching transaction history…",
+            "Calculating fees & volume…",
+            "Building activity heatmap…",
+            "Counting active days & streaks…",
+            "Almost there…",
+          ];
+          const STEP = 3;
+          const TOTAL = MESSAGES.length * STEP;
+          return (
+            <div className="relative h-6 w-full max-w-xs flex justify-center">
+              {MESSAGES.map((msg, i) => (
+                <p
+                  key={i}
+                  className="absolute text-sm font-medium text-primary whitespace-nowrap"
+                  style={{
+                    animation: `msg-cycle ${TOTAL}s ease-in-out ${i * STEP}s infinite`,
+                    opacity: i === 0 ? 1 : 0,
+                  }}
+                >
+                  {msg}
+                </p>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Pure CSS indeterminate progress bar — no JS needed */}
         <div className="w-full max-w-xs">
@@ -26,6 +49,11 @@ export default function Loading() {
             <div className="h-full rounded-full bg-primary animate-[loading_1.4s_ease-in-out_infinite]" />
           </div>
         </div>
+
+        {/* Whale warning tip */}
+        <p className="text-xs text-muted-foreground max-w-xs text-center leading-relaxed">
+          💡 Wallets with large tx history (whales) can take up to 30 seconds
+        </p>
 
         {/* Animated blocks */}
         <div className="flex gap-1.5 items-end h-8">

@@ -109,3 +109,9 @@
   50%  { width: 60%; }
   100% { transform: translateX(260%); width: 40%; }
 }
+
+/* Rotating loading messages — each visible ~3s in a 15s loop */
+@keyframes msg-cycle {
+  0%, 18%   { opacity: 1; transform: translateY(0); }
+  22%, 100% { opacity: 0; transform: translateY(-8px); }
+}
