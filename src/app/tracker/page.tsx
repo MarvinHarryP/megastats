@@ -130,7 +130,7 @@ export default function TrackerPage() {
   const [summaries, setSummaries] = useState<Record<string, WalletSummary>>({});
   const [input, setInput] = useState("");
   const [inputError, setInputError] = useState(false);
-  const [showInput, setShowInput] = useState(false);
+  const [showInput, setShowInput] = useState(true);
 
   // Fetch summaries for all tracked wallets
   const fetchSummaries = useCallback(() => {
@@ -179,31 +179,37 @@ export default function TrackerPage() {
         </div>
         <button
           onClick={() => setShowInput((v) => !v)}
-          className="flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md border border-border hover:bg-muted transition-colors"
+          className="w-full sm:w-auto flex items-center justify-center gap-1.5 text-sm font-medium px-4 py-2.5 rounded-md border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
         >
           <Plus className="h-4 w-4" />
-          Add wallet
+          {showInput ? "Cancel" : "Add wallet"}
         </button>
       </div>
 
       {showInput && (
-        <div className="mb-4 flex gap-2">
-          <input
-            autoFocus
-            value={input}
-            onChange={(e) => { setInput(e.target.value); setInputError(false); }}
-            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            placeholder="0x... wallet address"
-            className={`flex-1 font-mono text-sm px-3 py-2 rounded-md border bg-background outline-none focus:border-primary transition-colors ${
-              inputError ? "border-red-500" : "border-border"
-            }`}
-          />
-          <button
-            onClick={handleAdd}
-            className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity"
-          >
-            Add
-          </button>
+        <div className="mb-4 space-y-2">
+          <label className="text-xs font-medium text-muted-foreground">Wallet Address</label>
+          <div className="flex gap-2">
+            <input
+              autoFocus
+              value={input}
+              onChange={(e) => { setInput(e.target.value); setInputError(false); }}
+              onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+              placeholder="0x... paste wallet address here"
+              className={`flex-1 font-mono text-sm px-3 py-3 rounded-md border bg-background outline-none focus:border-primary transition-colors ${
+                inputError ? "border-red-500 placeholder:text-red-400" : "border-border"
+              }`}
+            />
+            <button
+              onClick={handleAdd}
+              className="px-5 py-3 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:opacity-90 transition-opacity shrink-0"
+            >
+              Add
+            </button>
+          </div>
+          {inputError && (
+            <p className="text-xs text-red-500">Please enter a valid 0x wallet address</p>
+          )}
         </div>
       )}
 
