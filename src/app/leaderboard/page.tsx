@@ -2,12 +2,13 @@ import { prisma } from "@/lib/prisma";
 import { formatAddress } from "@/lib/utils";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { TrackButton } from "@/components/leaderboard/TrackButton";
 
 export const metadata: Metadata = {
   title: "Leaderboard — MegaStats",
 };
 
-export const revalidate = 60;
+export const revalidate = 300;
 
 const RANK_STYLE: Record<number, { row: string; medal: string }> = {
   0: { row: "bg-yellow-50/60 dark:bg-yellow-900/10 border-yellow-200 dark:border-yellow-800", medal: "🥇" },
@@ -15,54 +16,82 @@ const RANK_STYLE: Record<number, { row: string; medal: string }> = {
   2: { row: "bg-orange-50/60 dark:bg-orange-900/10 border-orange-200 dark:border-orange-800", medal: "🥉" },
 };
 
-type SortKey = "txCount" | "volumeUsd" | "activeDays";
+function formatPoints(n: number): string {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
+  return n.toLocaleString();
+}
 
-const SORT_OPTIONS: { key: SortKey; label: string; col: string }[] = [
-  { key: "txCount",   label: "Transactions", col: "Txs" },
-  { key: "volumeUsd", label: "Volume (USD)",  col: "Volume" },
-  { key: "activeDays",label: "Active Days",   col: "Active Days" },
+type SortKey = "terminalPoints" | "txCount" | "weeklyPoints";
+
+const SORT_OPTIONS: { key: SortKey; label: string }[] = [
+  { key: "terminalPoints", label: "Terminal Points" },
+  { key: "weeklyPoints",   label: "Weekly Change" },
+  { key: "txCount",        label: "Transactions" },
 ];
 
 export default async function LeaderboardPage({
   searchParams,
 }: {
-  searchParams: { sort?: string };
+  searchParams: { sort?: string; page?: string };
 }) {
   const sort: SortKey =
-    (searchParams.sort as SortKey) && ["txCount", "volumeUsd", "activeDays"].includes(searchParams.sort!)
+    (["terminalPoints", "weeklyPoints", "txCount"] as SortKey[]).includes(searchParams.sort as SortKey)
       ? (searchParams.sort as SortKey)
-      : "txCount";
+      : "terminalPoints";
 
-  const rawWallets = await prisma.walletCache.findMany({
-    where: { txCount: { gt: 0 } },
-    select: {
-      id: true,
-      txCount: true,
-      volumeUsd: true,
-      activeDays: true,
-      uniqueContracts: true,
-      currentStreak: true,
-    },
+  const pageNum = Math.max(1, parseInt(searchParams.page ?? "1") || 1);
+  const PAGE_SIZE = 100;
+  const skip = (pageNum - 1) * PAGE_SIZE;
+
+  // Background daily refresh — seed route self-throttles to once per 23h
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3001";
+  fetch(`${baseUrl}/api/leaderboard/seed`, {
+    method: "POST",
+    headers: { "x-seed-secret": process.env.SEED_SECRET ?? "megastats-seed" },
+    cache: "no-store",
+  }).catch(() => {});
+
+  // Fetch leaderboard entries joined with wallet stats where available
+  const entries = await prisma.leaderboardEntry.findMany({
+    orderBy: sort === "txCount" ? {} : sort === "weeklyPoints" ? { weeklyPoints: "desc" } : { rank: "asc" },
+    skip,
+    take: PAGE_SIZE,
   });
 
-  const wallets = rawWallets.sort((a, b) => {
-    if (sort === "volumeUsd") return parseFloat(b.volumeUsd) - parseFloat(a.volumeUsd);
-    if (sort === "activeDays") return b.activeDays - a.activeDays;
-    return b.txCount - a.txCount;
+  // For tx-sort + track status
+  const walletIds = entries.map((e) => e.address);
+  const wallets = await prisma.walletCache.findMany({
+    where: { id: { in: walletIds } },
+    select: { id: true, txCount: true, volumeUsd: true, activeDays: true },
   });
+  const walletMap = new Map(wallets.map((w) => [w.id, w]));
+  // Only mark as tracked if user explicitly clicked Track — not just from a page visit
+  const trackedSet = new Set(entries.filter((e) => e.isTracked).map((e) => e.address));
 
-  const top3 = wallets.slice(0, 3);
-  const rest = wallets.slice(3);
+  let sorted = entries;
+  if (sort === "txCount") {
+    sorted = [...entries].sort((a, b) => {
+      const wa = walletMap.get(a.address);
+      const wb = walletMap.get(b.address);
+      return (wb?.txCount ?? 0) - (wa?.txCount ?? 0);
+    });
+  }
+
+  const totalCount = await prisma.leaderboardEntry.count();
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const top3 = pageNum === 1 ? sorted.slice(0, 3) : [];
+  const rest = pageNum === 1 ? sorted.slice(3) : sorted;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
+    <div className="max-w-4xl mx-auto space-y-6">
 
       {/* Hero */}
       <div className="text-center space-y-2 pt-2">
         <div className="text-4xl">🏆</div>
-        <h1 className="text-3xl font-bold tracking-tight">MegaStats Leaderboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">MegaETH Incentives Leaderboard</h1>
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
-          Top wallets by on-chain activity — ranked among wallets searched on this platform only.
+          Top {totalCount.toLocaleString()} wallets from the MegaETH Terminal incentives program · Season 1
         </p>
       </div>
 
@@ -83,44 +112,42 @@ export default async function LeaderboardPage({
         ))}
       </div>
 
-      {wallets.length === 0 ? (
-        <p className="text-center text-muted-foreground py-16">No wallets tracked yet — search one to get started.</p>
+      {sorted.length === 0 ? (
+        <p className="text-center text-muted-foreground py-16">No leaderboard data yet.</p>
       ) : (
         <>
-          {/* Top 3 podium cards */}
+          {/* Top 3 podium */}
           {top3.length > 0 && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {top3.map((w, i) => {
+              {top3.map((e, i) => {
                 const style = RANK_STYLE[i];
-                const volUsd = parseFloat(w.volumeUsd);
-                const mainValue =
-                  sort === "volumeUsd"
-                    ? volUsd > 0 ? `$${volUsd.toLocaleString("en-US", { maximumFractionDigits: 0 })}` : "—"
-                    : sort === "activeDays"
-                    ? `${w.activeDays} days`
-                    : w.txCount.toLocaleString();
-                const mainLabel =
-                  sort === "volumeUsd" ? "Volume" : sort === "activeDays" ? "Active Days" : "Transactions";
-
+                const wallet = walletMap.get(e.address);
                 return (
                   <Link
-                    key={w.id}
-                    href={`/${w.id}`}
+                    key={e.address}
+                    href={`/${e.address}`}
                     className={`rounded-xl border p-4 space-y-3 hover:scale-[1.02] transition-transform ${style.row}`}
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-2xl">{style.medal}</span>
-                      {w.currentStreak > 0 && (
-                        <span className="text-xs text-muted-foreground">🔥 {w.currentStreak}d</span>
+                      <span className="text-xs font-medium text-primary">#{e.rank}</span>
+                    </div>
+                    <div>
+                      {e.xAccount && (
+                        <p className="text-xs text-muted-foreground font-medium">@{e.xAccount}</p>
                       )}
+                      <p className="font-mono text-sm font-semibold text-primary">{formatAddress(e.address, 8)}</p>
                     </div>
-                    <div>
-                      <p className="font-mono text-sm font-semibold text-primary">{formatAddress(w.id, 8)}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{w.activeDays} active days · {w.uniqueContracts} contracts</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-muted-foreground">{mainLabel}</p>
-                      <p className="font-bold text-lg">{mainValue}</p>
+                    <div className="space-y-1">
+                      <div>
+                        <p className="text-xs text-muted-foreground">Terminal Points</p>
+                        <p className="font-bold text-lg">{formatPoints(e.totalPoints)}</p>
+                      </div>
+                      {wallet && (
+                        <p className="text-xs text-muted-foreground">
+                          {wallet.txCount.toLocaleString()} txs · {wallet.activeDays}d active
+                        </p>
+                      )}
                     </div>
                   </Link>
                 );
@@ -128,86 +155,82 @@ export default async function LeaderboardPage({
             </div>
           )}
 
-          {/* Rest of the list */}
-          {rest.length > 0 && (
-            <>
-              {/* Mobile cards (< sm) */}
-              <div className="sm:hidden space-y-2">
-                {rest.map((w, i) => {
-                  const volUsd = parseFloat(w.volumeUsd);
-                  const mainValue =
-                    sort === "volumeUsd"
-                      ? volUsd > 0 ? `$${volUsd.toLocaleString("en-US", { maximumFractionDigits: 0 })}` : "—"
-                      : sort === "activeDays"
-                      ? `${w.activeDays} days`
-                      : w.txCount.toLocaleString();
+          {/* Table */}
+          <div className="rounded-lg border overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b bg-muted/40">
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-12">Rank</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Wallet</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Points</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-muted-foreground hidden sm:table-cell">Weekly Δ</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-muted-foreground hidden md:table-cell">Txs</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-muted-foreground hidden lg:table-cell">Volume</th>
+                  <th className="px-4 py-2.5 w-24"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {rest.map((e) => {
+                  const wallet = walletMap.get(e.address);
+                  const volUsd = parseFloat(wallet?.volumeUsd ?? "0");
                   return (
-                    <div key={w.id} className="rounded-xl border bg-card px-4 py-3 flex items-center gap-3">
-                      <span className="text-base font-bold text-muted-foreground w-8 shrink-0 tabular-nums">{i + 4}</span>
-                      <div className="flex-1 min-w-0">
-                        <Link href={`/${w.id}`} className="font-mono text-sm font-medium text-primary hover:underline truncate block">
-                          {formatAddress(w.id, 10)}
-                        </Link>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {w.txCount.toLocaleString()} txs
-                          {volUsd > 0 && ` · $${volUsd.toLocaleString("en-US", { maximumFractionDigits: 0 })}`}
-                          {` · ${w.activeDays}d active`}
-                          {w.currentStreak > 0 && ` · 🔥${w.currentStreak}`}
-                        </p>
-                      </div>
-                      <span className="text-sm font-bold tabular-nums shrink-0">{mainValue}</span>
-                    </div>
+                    <tr key={e.address} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                      <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{e.rank}</td>
+                      <td className="px-4 py-3">
+                        <div>
+                          {e.xAccount && (
+                            <p className="text-xs text-muted-foreground">@{e.xAccount}</p>
+                          )}
+                          <Link href={`/${e.address}`} className="font-mono text-primary hover:underline">
+                            {formatAddress(e.address, 8)}
+                          </Link>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-right font-semibold">{formatPoints(e.totalPoints)}</td>
+                      <td className="px-4 py-3 text-right text-muted-foreground hidden sm:table-cell">
+                        {e.weeklyPoints > 0 ? `+${formatPoints(e.weeklyPoints)}` : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-right text-muted-foreground hidden md:table-cell">
+                        {wallet ? wallet.txCount.toLocaleString() : <span className="opacity-40">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-right text-muted-foreground hidden lg:table-cell">
+                        {volUsd > 0 ? `$${volUsd.toLocaleString("en-US", { maximumFractionDigits: 0 })}` : <span className="opacity-40">—</span>}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <TrackButton address={e.address} alreadyTracked={trackedSet.has(e.address)} />
+                      </td>
+                    </tr>
                   );
                 })}
-              </div>
+              </tbody>
+            </table>
+          </div>
 
-              {/* Desktop table (≥ sm) */}
-              <div className="hidden sm:block rounded-lg border overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/40">
-                      <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-12">#</th>
-                      <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Wallet</th>
-                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Txs</th>
-                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Volume</th>
-                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground hidden md:table-cell">Contracts</th>
-                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground hidden md:table-cell">Active Days</th>
-                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground hidden lg:table-cell">Streak</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rest.map((w, i) => {
-                      const volUsd = parseFloat(w.volumeUsd);
-                      return (
-                        <tr key={w.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                          <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{i + 4}</td>
-                          <td className="px-4 py-3">
-                            <Link href={`/${w.id}`} className="font-mono text-primary hover:underline">
-                              {formatAddress(w.id, 8)}
-                            </Link>
-                          </td>
-                          <td className="px-4 py-3 text-right font-semibold">{w.txCount.toLocaleString()}</td>
-                          <td className="px-4 py-3 text-right text-muted-foreground">
-                            {volUsd > 0 ? `$${volUsd.toLocaleString("en-US", { maximumFractionDigits: 0 })}` : "—"}
-                          </td>
-                          <td className="px-4 py-3 text-right text-muted-foreground hidden md:table-cell">{w.uniqueContracts}</td>
-                          <td className="px-4 py-3 text-right text-muted-foreground hidden md:table-cell">{w.activeDays}</td>
-                          <td className="px-4 py-3 text-right text-muted-foreground hidden lg:table-cell">
-                            {w.currentStreak > 0 ? `🔥 ${w.currentStreak}` : "—"}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </>
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pb-4">
+              {pageNum > 1 && (
+                <Link href={`/leaderboard?sort=${sort}&page=${pageNum - 1}`}
+                  className="px-3 py-1.5 rounded border text-sm hover:bg-muted/30 transition-colors">
+                  ← Prev
+                </Link>
+              )}
+              <span className="text-sm text-muted-foreground">
+                Page {pageNum} / {totalPages}
+              </span>
+              {pageNum < totalPages && (
+                <Link href={`/leaderboard?sort=${sort}&page=${pageNum + 1}`}
+                  className="px-3 py-1.5 rounded border text-sm hover:bg-muted/30 transition-colors">
+                  Next →
+                </Link>
+              )}
+            </div>
           )}
         </>
       )}
 
       <p className="text-xs text-muted-foreground text-center pb-4">
-        Only wallets searched on MegaStats appear here · Data refreshes every 5 min
+        Data from terminal.megaeth.com · Tx stats load on first wallet visit · Season 1 ends June 23, 2026
       </p>
     </div>
   );

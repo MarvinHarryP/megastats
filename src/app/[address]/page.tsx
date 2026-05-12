@@ -17,6 +17,7 @@ import { BalanceCard } from "@/components/stats/BalanceCard";
 import { NFTGallery } from "@/components/stats/NFTGallery";
 import { DeFiPositions } from "@/components/stats/DeFiPositions";
 import { fetchDefiPositions } from "@/lib/defi-fetcher";
+import { TerminalCard } from "@/components/stats/TerminalCard";
 
 interface Props {
   params: { address: string };
@@ -39,10 +40,14 @@ export default async function AddressPage({ params }: Props) {
   let rank: number | null = null;
   let totalTracked = 0;
   let initialDefiPositions;
+  let terminalEntry: { rank: number; totalPoints: number; weeklyPoints: number; xAccount: string | null } | null = null;
+  let terminalTotal = 0;
   try {
-    [data, initialDefiPositions] = await Promise.all([
+    [data, initialDefiPositions, terminalEntry, terminalTotal] = await Promise.all([
       getOrSyncWallet(address),
       fetchDefiPositions(address).catch(() => []),
+      prisma.leaderboardEntry.findUnique({ where: { address } }).catch(() => null),
+      prisma.leaderboardEntry.count().catch(() => 0),
     ]);
     const [above, total] = await Promise.all([
       prisma.walletCache.count({ where: { txCount: { gt: data.stats.txCount } } }),
@@ -74,14 +79,6 @@ export default async function AddressPage({ params }: Props) {
           >
             <ExternalLink className="h-4 w-4" />
           </a>
-          <a
-            href="https://terminal.megaeth.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs font-medium px-2 py-0.5 rounded border border-border text-muted-foreground hover:text-foreground hover:border-foreground transition-colors"
-          >
-            Click here to check Rank & Points →
-          </a>
         </div>
         <div className="flex items-center gap-3">
           {rank !== null && totalTracked > 0 && (
@@ -93,12 +90,22 @@ export default async function AddressPage({ params }: Props) {
         </div>
       </div>
 
+      {terminalEntry && (
+        <TerminalCard
+          rank={terminalEntry.rank}
+          totalPoints={terminalEntry.totalPoints}
+          weeklyPoints={terminalEntry.weeklyPoints}
+          xAccount={terminalEntry.xAccount}
+          totalInLeaderboard={terminalTotal}
+        />
+      )}
+
+
       <StatsGrid stats={data.stats} dailyActivity={data.dailyActivity} />
 
       <BalanceCard address={address} />
 
-      {/* DeFiPositions temporarily hidden — re-enable when ready */}
-      {/* <DeFiPositions address={address} initialDefiPositions={initialDefiPositions} /> */}
+      <DeFiPositions address={address} initialDefiPositions={initialDefiPositions} />
 
       <NFTGallery address={address} />
 

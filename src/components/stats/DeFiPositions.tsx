@@ -206,26 +206,39 @@ export function DeFiPositions({ address, initialDefiPositions }: Props) {
   const [totalUsd, setTotalUsd] = useState(initialSorted.reduce((s, g) => s + g.totalUsd, 0));
 
   useEffect(() => {
-    // Fetch with abort timeout so a hanging RPC never blocks the UI
-    function fetchWithTimeout(url: string, ms: number) {
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), ms);
-      return fetch(url, { signal: ctrl.signal })
-        .then((r) => r.json())
-        .finally(() => clearTimeout(t));
-    }
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 15_000);
 
     // Start with the server-pre-fetched ERC-20 positions (already in state),
     // then fetch V3 LP positions client-side and merge in
-    fetchWithTimeout(`/api/wallet/${address}/v3positions`, 15_000)
+    fetch(`/api/wallet/${address}/v3positions`, { signal: ctrl.signal })
+      .then((r) => r.json())
       .then((v3Data) => {
         const v3Positions: V3Position[] = v3Data?.positions ?? [];
 
         setGroups((prev) => {
-          // Clone existing groups from server-side ERC-20 data
-          const map = new Map<string, ProtocolGroup>(
-            prev.map((g) => [g.protocol, { ...g, positions: [...g.positions] }])
-          );
+          // Protocols that have V3 positions — ERC-20 LP tokens for these will be removed
+          // to avoid double-counting (V3 data is more accurate than Blockscout exchange_rate)
+          const v3Protocols = new Set(v3Positions.map((p) => p.protocol));
+
+          // Clone existing ERC-20 groups, but strip LP/Reward positions for protocols
+          // that are covered by V3 (keep non-LP positions like staking/vault tokens)
+          const map = new Map<string, ProtocolGroup>();
+          for (const g of prev) {
+            if (v3Protocols.has(g.protocol)) {
+              // Filter out LP/Reward ERC-20 positions — V3 will replace them
+              const nonLp = g.positions.filter(
+                (p) => !/(LP|Rewards?|Market|Vault)/i.test(p.label)
+              );
+              if (nonLp.length > 0) {
+                const totalUsd = nonLp.reduce((s, p) => s + (p.usdValue ?? 0), 0);
+                map.set(g.protocol, { ...g, positions: nonLp, totalUsd });
+              }
+              // else: drop entire group — V3 will re-add it
+            } else {
+              map.set(g.protocol, { ...g, positions: [...g.positions] });
+            }
+          }
 
           for (const p of v3Positions) {
             if (!map.has(p.protocol)) {
@@ -244,8 +257,14 @@ export function DeFiPositions({ address, initialDefiPositions }: Props) {
           return sorted;
         });
       })
-      .catch(() => { /* V3 fetch failed — keep ERC-20 positions */ })
-      .finally(() => setLoading(false));
+      .catch((e) => {
+        if (e?.name !== "AbortError") {
+          /* V3 fetch failed — keep ERC-20 positions */
+        }
+      })
+      .finally(() => { clearTimeout(t); setLoading(false); });
+
+    return () => { ctrl.abort(); clearTimeout(t); };
   }, [address]);
 
   // Show nothing only if we have no data at all (no pre-fetched + still loading V3)

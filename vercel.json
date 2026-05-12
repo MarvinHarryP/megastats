@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/leaderboard/seed",
+      "schedule": "0 6 * * *"
+    }
+  ]
+}

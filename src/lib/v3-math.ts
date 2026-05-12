@@ -30,7 +30,7 @@ export function getSqrtRatioAtTick(tick: number): bigint {
   if (absTick & 0x2000)   ratio = (ratio * 0xa9f746462d870fdf8a65dc1f90e061e5n)    >> 128n;
   if (absTick & 0x4000)   ratio = (ratio * 0x70d869a156d2a1b890bb3df62baf32f7n)    >> 128n;
   if (absTick & 0x8000)   ratio = (ratio * 0x31be135f97d08fd981231505542fcfa6n)    >> 128n;
-  if (absTick & 0x10000)  ratio = (ratio * 0x9aa508b5b7a84e101a108615b8ef7f46n)    >> 128n;
+  if (absTick & 0x10000)  ratio = (ratio * 0x9aa508b5b7a84e101a108615b8ef7f4n)     >> 128n;
   if (absTick & 0x20000)  ratio = (ratio * 0x5d6af8dedb81196699c329225ee604n)      >> 128n;
   if (absTick & 0x40000)  ratio = (ratio * 0x2216e584f5fa1ea926041bedfe98n)        >> 128n;
   if (absTick & 0x80000)  ratio = (ratio * 0x48a170391f7dc42444e8fa2n)             >> 128n;

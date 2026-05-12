@@ -140,9 +140,14 @@ async function fetchDexPositions(
   }));
 
   const tokenIdResults = await client.multicall({ contracts: tokenIdCalls });
-  const tokenIds = tokenIdResults
-    .map((r) => (r.status === "success" ? (r.result as bigint) : null))
-    .filter((id): id is bigint => id !== null);
+  const tokenIds = [
+    ...new Set(
+      tokenIdResults
+        .map((r) => (r.status === "success" ? (r.result as bigint) : null))
+        .filter((id): id is bigint => id !== null)
+        .map(String)  // deduplicate as strings
+    ),
+  ].map(BigInt); // back to bigint
 
   // Get position details for all token IDs
   const positionCalls = tokenIds.map((tokenId) => ({

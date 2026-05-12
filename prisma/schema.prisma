@@ -72,3 +72,15 @@ model DailyActivity {
   @@index([walletId])
   @@map("daily_activity")
 }
+
+model LeaderboardEntry {
+  address      String   @id
+  xAccount     String?
+  totalPoints  Int      @default(0)
+  weeklyPoints Int      @default(0)
+  rank         Int
+  isTracked    Boolean  @default(false)
+  updatedAt    DateTime @updatedAt
+
+  @@map("leaderboard_entry")
+}
