@@ -71,17 +71,17 @@ const REGISTRY: Record<string, ProtocolInfo> = {
 
   // ── Aave MegaETH ─────────────────────────────────────────────────────────
   // aTokens (supplied)
-  "0xa31e6b433382062e8a1da41485f7b234d97c3f4d": { protocol: "Aave", type: "Supplied WETH",   icon: "👻", color: "fuchsia", url: "https://app.aave.com" },
-  "0x5df82810cb4b8f3e0da3c031ccc9208ee9cf9500": { protocol: "Aave", type: "Supplied USDm",   icon: "👻", color: "fuchsia", url: "https://app.aave.com" },
-  "0xe2283e01a667b512c340f19b499d86fbc885d5ef": { protocol: "Aave", type: "Supplied USDT0",  icon: "👻", color: "fuchsia", url: "https://app.aave.com" },
-  "0x78f2cb75d664d6f71433174056c25a5958b4016f": { protocol: "Aave", type: "Supplied USDe",   icon: "👻", color: "fuchsia", url: "https://app.aave.com" },
+  "0xa31e6b433382062e8a1da41485f7b234d97c3f4d": { protocol: "Aave", type: "Supplied WETH",   icon: "👻", color: "fuchsia", url: "https://app.aave.com", priceHint: "eth" },
+  "0x5df82810cb4b8f3e0da3c031ccc9208ee9cf9500": { protocol: "Aave", type: "Supplied USDm",   icon: "👻", color: "fuchsia", url: "https://app.aave.com", priceHint: "usdm" },
+  "0xe2283e01a667b512c340f19b499d86fbc885d5ef": { protocol: "Aave", type: "Supplied USDT0",  icon: "👻", color: "fuchsia", url: "https://app.aave.com", priceHint: "usdm" },
+  "0x78f2cb75d664d6f71433174056c25a5958b4016f": { protocol: "Aave", type: "Supplied USDe",   icon: "👻", color: "fuchsia", url: "https://app.aave.com", priceHint: "usdm" },
   "0x0889d59ea7178ee5b71da01949a5cb42aafbe337": { protocol: "Aave", type: "Supplied BTC.b",  icon: "👻", color: "fuchsia", url: "https://app.aave.com" },
-  "0xad2de503b5c723371d6b38a5224a2e12e103dfb8": { protocol: "Aave", type: "Supplied wstETH", icon: "👻", color: "fuchsia", url: "https://app.aave.com" },
+  "0xad2de503b5c723371d6b38a5224a2e12e103dfb8": { protocol: "Aave", type: "Supplied wstETH", icon: "👻", color: "fuchsia", url: "https://app.aave.com", priceHint: "eth" },
   // variableDebt tokens (borrowed)
-  "0x6b408d6c479c304794abc60a4693a3ad2d3c2d0d": { protocol: "Aave", type: "Debt USDm",   icon: "👻", color: "fuchsia", url: "https://app.aave.com" },
-  "0xb951225133b5eed3d88645e4bb1360136ff70d9a": { protocol: "Aave", type: "Debt USDT0",  icon: "👻", color: "fuchsia", url: "https://app.aave.com" },
-  "0x7dd785d88a64dd7db6b46dad4d2e0728cc65e009": { protocol: "Aave", type: "Debt USDe",   icon: "👻", color: "fuchsia", url: "https://app.aave.com" },
-  "0x09adccc7af2abd356c18a4cadf2e5cc250f300e9": { protocol: "Aave", type: "Debt WETH",   icon: "👻", color: "fuchsia", url: "https://app.aave.com" },
+  "0x6b408d6c479c304794abc60a4693a3ad2d3c2d0d": { protocol: "Aave", type: "Debt USDm",   icon: "👻", color: "fuchsia", url: "https://app.aave.com", priceHint: "usdm" },
+  "0xb951225133b5eed3d88645e4bb1360136ff70d9a": { protocol: "Aave", type: "Debt USDT0",  icon: "👻", color: "fuchsia", url: "https://app.aave.com", priceHint: "usdm" },
+  "0x7dd785d88a64dd7db6b46dad4d2e0728cc65e009": { protocol: "Aave", type: "Debt USDe",   icon: "👻", color: "fuchsia", url: "https://app.aave.com", priceHint: "usdm" },
+  "0x09adccc7af2abd356c18a4cadf2e5cc250f300e9": { protocol: "Aave", type: "Debt WETH",   icon: "👻", color: "fuchsia", url: "https://app.aave.com", priceHint: "eth" },
 
   // ── Tulpea ───────────────────────────────────────────────────────────────
   "0xa21eafee50da331521b6ec4dd33ded3f9e1bd2ea": { protocol: "Tulpea", type: "Yield Vault", icon: "🌿", color: "teal", url: "https://tulpea.xyz" },
@@ -125,7 +125,8 @@ export function detectByName(name: string): ProtocolInfo | null {
   if (n.includes("aave megaeth") || n.includes("aave megaeth")) {
     const isDebt = n.includes("variable debt") || n.includes("debt");
     const asset = name.replace(/.*?(WETH|USDm|USDT0|USDe|BTC\.?b|wstETH|MEGA).*/i, "$1");
-    return { protocol: "Aave", type: `${isDebt ? "Debt" : "Supplied"} ${asset}`, icon: "👻", color: "fuchsia", url: "https://app.aave.com" };
+    const priceHint = /WETH|wstETH/i.test(asset) ? "eth" : /USDm|USDT0|USDe/i.test(asset) ? "usdm" : undefined;
+    return { protocol: "Aave", type: `${isDebt ? "Debt" : "Supplied"} ${asset}`, icon: "👻", color: "fuchsia", url: "https://app.aave.com", priceHint };
   }
   if (n.includes("tulpea")) {
     return { protocol: "Tulpea", type: "Yield Vault", icon: "🌿", color: "teal", url: "https://tulpea.xyz" };
