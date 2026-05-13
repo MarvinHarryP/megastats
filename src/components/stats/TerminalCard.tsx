@@ -33,7 +33,7 @@ export function TerminalCard({
   const estimatedMega = share * SEASON1_POOL * DISCOUNT;
   const estimatedUsd = megaPrice ? estimatedMega * megaPrice : null;
   const percentile = totalInLeaderboard > 0
-    ? Math.ceil((rank / totalInLeaderboard) * 100)
+    ? Math.round((1 - (rank - 1) / totalInLeaderboard) * 100)
     : null;
 
   return (
