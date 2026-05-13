@@ -42,13 +42,24 @@ export default async function AddressPage({ params }: Props) {
   let initialDefiPositions;
   let terminalEntry: { rank: number; totalPoints: number; weeklyPoints: number; xAccount: string | null } | null = null;
   let terminalTotal = 0;
+  let terminalPointsSum = 0;
+  let megaPrice: number | null = null;
   try {
-    [data, initialDefiPositions, terminalEntry, terminalTotal] = await Promise.all([
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3001";
+    const [dataResult, defiResult, entryResult, countResult, aggResult, priceResult] = await Promise.all([
       getOrSyncWallet(address),
       fetchDefiPositions(address).catch(() => []),
       prisma.leaderboardEntry.findUnique({ where: { address } }).catch(() => null),
       prisma.leaderboardEntry.count().catch(() => 0),
+      prisma.leaderboardEntry.aggregate({ _sum: { totalPoints: true } }).catch(() => null),
+      fetch(`${baseUrl}/api/mega-price`, { next: { revalidate: 300 } }).then(r => r.json()).catch(() => null),
     ]);
+    data = dataResult;
+    initialDefiPositions = defiResult;
+    terminalEntry = entryResult;
+    terminalTotal = countResult;
+    terminalPointsSum = aggResult?._sum?.totalPoints ?? 0;
+    megaPrice = priceResult?.price ?? null;
     const [above, total] = await Promise.all([
       prisma.walletCache.count({ where: { txCount: { gt: data.stats.txCount } } }),
       prisma.walletCache.count({ where: { txCount: { gt: 0 } } }),
@@ -97,6 +108,8 @@ export default async function AddressPage({ params }: Props) {
           weeklyPoints={terminalEntry.weeklyPoints}
           xAccount={terminalEntry.xAccount}
           totalInLeaderboard={terminalTotal}
+          totalPointsSum={terminalPointsSum}
+          megaPrice={megaPrice}
         />
       )}
 

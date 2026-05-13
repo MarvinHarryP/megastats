@@ -33,16 +33,17 @@ const SORT_OPTIONS: { key: SortKey; label: string }[] = [
 export default async function LeaderboardPage({
   searchParams,
 }: {
-  searchParams: { sort?: string; page?: string };
+  searchParams: { sort?: string; page?: string; q?: string };
 }) {
   const sort: SortKey =
     (["terminalPoints", "weeklyPoints", "txCount"] as SortKey[]).includes(searchParams.sort as SortKey)
       ? (searchParams.sort as SortKey)
       : "terminalPoints";
 
+  const q = searchParams.q?.trim() ?? "";
   const pageNum = Math.max(1, parseInt(searchParams.page ?? "1") || 1);
   const PAGE_SIZE = 100;
-  const skip = (pageNum - 1) * PAGE_SIZE;
+  const skip = q ? 0 : (pageNum - 1) * PAGE_SIZE; // no pagination when searching
 
   // Background daily refresh — seed route self-throttles to once per 23h
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? "http://localhost:3001";
@@ -52,9 +53,20 @@ export default async function LeaderboardPage({
     cache: "no-store",
   }).catch(() => {});
 
-  // Fetch leaderboard entries joined with wallet stats where available
+  // Build search filter
+  const where = q
+    ? {
+        OR: [
+          { xAccount: { contains: q } },
+          { address: { contains: q } },
+        ],
+      }
+    : {};
+
+  // Fetch leaderboard entries — always sort by totalPoints for "terminalPoints", weeklyPoints for "weeklyPoints"
   const entries = await prisma.leaderboardEntry.findMany({
-    orderBy: sort === "txCount" ? {} : sort === "weeklyPoints" ? { weeklyPoints: "desc" } : { rank: "asc" },
+    where,
+    orderBy: sort === "txCount" ? {} : sort === "weeklyPoints" ? { weeklyPoints: "desc" } : { totalPoints: "desc" },
     skip,
     take: PAGE_SIZE,
   });
@@ -79,7 +91,8 @@ export default async function LeaderboardPage({
   }
 
   const totalCount = await prisma.leaderboardEntry.count();
-  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+  const filteredCount = q ? sorted.length : totalCount;
+  const totalPages = q ? 1 : Math.ceil(totalCount / PAGE_SIZE);
   const top3 = pageNum === 1 ? sorted.slice(0, 3) : [];
   const rest = pageNum === 1 ? sorted.slice(3) : sorted;
 
@@ -112,6 +125,41 @@ export default async function LeaderboardPage({
         ))}
       </div>
 
+      {/* Search */}
+      <form method="GET" action="/leaderboard" className="flex gap-2 max-w-sm mx-auto">
+        <input type="hidden" name="sort" value={sort} />
+        <input
+          name="q"
+          defaultValue={q}
+          placeholder="Search by @handle or address…"
+          autoComplete="off"
+          className="flex-1 rounded-lg border border-border bg-background px-3 py-1.5 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+        />
+        {q ? (
+          <Link
+            href={`/leaderboard?sort=${sort}`}
+            className="px-3 py-1.5 rounded-lg border border-border text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            ✕
+          </Link>
+        ) : (
+          <button
+            type="submit"
+            className="px-3 py-1.5 rounded-lg border border-border text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Search
+          </button>
+        )}
+      </form>
+
+      {q && (
+        <p className="text-center text-sm text-muted-foreground -mt-2">
+          {filteredCount === 0
+            ? `No results for "${q}"`
+            : `${filteredCount} result${filteredCount === 1 ? "" : "s"} for "${q}"`}
+        </p>
+      )}
+
       {sorted.length === 0 ? (
         <p className="text-center text-muted-foreground py-16">No leaderboard data yet.</p>
       ) : (
@@ -130,7 +178,7 @@ export default async function LeaderboardPage({
                   >
                     <div className="flex items-center justify-between">
                       <span className="text-2xl">{style.medal}</span>
-                      <span className="text-xs font-medium text-primary">#{e.rank}</span>
+                      <span className="text-xs font-medium text-primary">#{skip + sorted.indexOf(e) + 1}</span>
                     </div>
                     <div>
                       {e.xAccount && (
@@ -170,12 +218,13 @@ export default async function LeaderboardPage({
                 </tr>
               </thead>
               <tbody>
-                {rest.map((e) => {
+                {rest.map((e, i) => {
                   const wallet = walletMap.get(e.address);
                   const volUsd = parseFloat(wallet?.volumeUsd ?? "0");
+                  const displayRank = skip + (pageNum === 1 ? 3 : 0) + i + (pageNum === 1 ? 4 : 1);
                   return (
                     <tr key={e.address} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{e.rank}</td>
+                      <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{displayRank}</td>
                       <td className="px-4 py-3">
                         <div>
                           {e.xAccount && (
@@ -210,7 +259,7 @@ export default async function LeaderboardPage({
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 pb-4">
               {pageNum > 1 && (
-                <Link href={`/leaderboard?sort=${sort}&page=${pageNum - 1}`}
+                <Link href={`/leaderboard?sort=${sort}&page=${pageNum - 1}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
                   className="px-3 py-1.5 rounded border text-sm hover:bg-muted/30 transition-colors">
                   ← Prev
                 </Link>
@@ -219,7 +268,7 @@ export default async function LeaderboardPage({
                 Page {pageNum} / {totalPages}
               </span>
               {pageNum < totalPages && (
-                <Link href={`/leaderboard?sort=${sort}&page=${pageNum + 1}`}
+                <Link href={`/leaderboard?sort=${sort}&page=${pageNum + 1}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
                   className="px-3 py-1.5 rounded border text-sm hover:bg-muted/30 transition-colors">
                   Next →
                 </Link>
