@@ -27,7 +27,6 @@ type SortKey = "terminalPoints" | "txCount" | "weeklyPoints";
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "terminalPoints", label: "Terminal Points" },
   { key: "weeklyPoints",   label: "Weekly Change" },
-  { key: "txCount",        label: "Transactions" },
 ];
 
 export default async function LeaderboardPage({
@@ -90,7 +89,11 @@ export default async function LeaderboardPage({
     });
   }
 
-  const totalCount = await prisma.leaderboardEntry.count();
+  const [totalCount, totalPointsAgg] = await Promise.all([
+    prisma.leaderboardEntry.count(),
+    prisma.leaderboardEntry.aggregate({ _sum: { totalPoints: true } }),
+  ]);
+  const totalPointsDistributed = totalPointsAgg._sum.totalPoints ?? 0;
   const filteredCount = q ? sorted.length : totalCount;
   const totalPages = q ? 1 : Math.ceil(totalCount / PAGE_SIZE);
   const top3 = pageNum === 1 ? sorted.slice(0, 3) : [];
@@ -104,7 +107,7 @@ export default async function LeaderboardPage({
         <div className="text-4xl">🏆</div>
         <h1 className="text-3xl font-bold tracking-tight">MegaETH Incentives Leaderboard</h1>
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
-          Top {totalCount.toLocaleString()} wallets from the MegaETH Terminal incentives program · Season 1
+          {totalCount.toLocaleString()} wallets · {formatPoints(totalPointsDistributed)} points distributed · Season 1
         </p>
       </div>
 

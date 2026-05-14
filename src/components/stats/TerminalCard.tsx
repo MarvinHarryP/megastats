@@ -40,7 +40,7 @@ export function TerminalCard({
     <div className="rounded-xl border bg-card overflow-hidden">
 
       {/* ── Main stats row ── */}
-      <div className="flex items-stretch divide-x divide-border">
+      <div className="flex flex-wrap sm:flex-nowrap items-stretch divide-y sm:divide-y-0 sm:divide-x divide-border">
 
         {/* Label col */}
         <div className="flex items-center gap-2 px-4 py-3 shrink-0">
