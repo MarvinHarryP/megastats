@@ -84,3 +84,25 @@ model LeaderboardEntry {
 
   @@map("leaderboard_entry")
 }
+
+model WalletCluster {
+  address       String                @id
+  sessionToken  String?               @unique
+  sessionExpiry DateTime?
+  members       WalletClusterMember[]
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+
+  @@map("wallet_cluster")
+}
+
+model WalletClusterMember {
+  id             String        @id @default(cuid())
+  clusterAddress String
+  memberAddress  String
+  label          String?
+  cluster        WalletCluster @relation(fields: [clusterAddress], references: [address], onDelete: Cascade)
+
+  @@unique([clusterAddress, memberAddress])
+  @@map("wallet_cluster_member")
+}

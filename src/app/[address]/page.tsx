@@ -18,6 +18,7 @@ import { NFTGallery } from "@/components/stats/NFTGallery";
 import { DeFiPositions } from "@/components/stats/DeFiPositions";
 import { fetchDefiPositions } from "@/lib/defi-fetcher";
 import { TerminalCard } from "@/components/stats/TerminalCard";
+import { ClusterSection } from "@/components/cluster/ClusterSection";
 
 interface Props {
   params: { address: string };
@@ -113,8 +114,12 @@ export default async function AddressPage({ params }: Props) {
         />
       )}
 
+      <div className="space-y-2">
+        <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider px-0.5">Main Wallet</p>
+        <StatsGrid stats={data.stats} dailyActivity={data.dailyActivity} />
+      </div>
 
-      <StatsGrid stats={data.stats} dailyActivity={data.dailyActivity} />
+      <ClusterSection address={address} />
 
       <BalanceCard address={address} />
 
