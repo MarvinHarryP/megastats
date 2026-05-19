@@ -3,10 +3,20 @@ import { prisma } from "@/lib/prisma";
 
 interface TerminalEntry {
   rank: number;
-  xAccount?: string;
-  mainWalletAddress: string;
+  displayName?: string;
+  xAccount?: string;      // Twitter handle if displayName looks like one
+  address?: string;       // real wallet address if present in payload
   totalPoints: number;
   weeklyPoints: number;
+}
+
+function looksLikeAddress(s: string): boolean {
+  return /^0x[a-fA-F0-9]{40}$/i.test(s);
+}
+
+function looksLikeTruncated(s: string): boolean {
+  // e.g. "0xa55c...C55d"
+  return /^0x[a-fA-F0-9]{4}\.\.\./.test(s);
 }
 
 async function fetchLeaderboard(): Promise<TerminalEntry[]> {
@@ -23,16 +33,73 @@ async function fetchLeaderboard(): Promise<TerminalEntry[]> {
   const text = await res.text();
 
   const entries: TerminalEntry[] = [];
-  const regex = /"rank":(\d+)(?:,"xAccount":"([^"]*)")?,"mainWalletAddress":"(0x[a-fA-F0-9]{40})","totalPoints":(\d+),"weeklyPointsChange":(\d+)/g;
+
+  // --- Try old format first: has mainWalletAddress ---
+  const oldRegex = /"rank":(\d+)(?:,"xAccount":"([^"]*)")?,"mainWalletAddress":"(0x[a-fA-F0-9]{40})","totalPoints":(\d+),"weeklyPointsChange":(\d+)/g;
   let match;
-  while ((match = regex.exec(text)) !== null) {
+  while ((match = oldRegex.exec(text)) !== null) {
+    const addr = match[3].toLowerCase();
     entries.push({
       rank: parseInt(match[1]),
       xAccount: match[2] || undefined,
-      mainWalletAddress: match[3].toLowerCase(),
+      address: addr,
       totalPoints: parseInt(match[4]),
       weeklyPoints: parseInt(match[5] ?? "0"),
     });
+  }
+
+  if (entries.length > 0) return entries;
+
+  // --- New format: {rank, totalPoints, weeklyPointsChange, displayName} ---
+  // Parse line-by-line looking for JSON objects with rank + totalPoints
+  for (const line of text.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith("{") && !trimmed.startsWith("[{")) continue;
+
+    // Extract all JSON-like objects from this line
+    const objMatches = trimmed.matchAll(/\{[^{}]+\}/g);
+    for (const om of objMatches) {
+      try {
+        const obj = JSON.parse(om[0]);
+        if (
+          typeof obj.rank === "number" &&
+          typeof obj.totalPoints === "number"
+        ) {
+          const weeklyPoints = obj.weeklyPointsChange ?? obj.weeklyPoints ?? 0;
+          const dn: string | undefined = obj.displayName ?? obj.xAccount;
+          const isRealAddr = dn && looksLikeAddress(dn);
+          const isTruncated = dn && looksLikeTruncated(dn);
+          entries.push({
+            rank: obj.rank,
+            displayName: dn,
+            xAccount: dn && !isRealAddr && !isTruncated ? dn : undefined,
+            address: isRealAddr ? dn!.toLowerCase() : undefined,
+            totalPoints: obj.totalPoints,
+            weeklyPoints,
+          });
+        }
+      } catch {
+        // not valid JSON object
+      }
+    }
+  }
+
+  // Fallback: regex scan for new compact format
+  if (entries.length === 0) {
+    const newRegex = /"rank":(\d+),"totalPoints":(\d+),"weeklyPointsChange":(\d+)(?:,"displayName":"([^"]*)")?/g;
+    while ((match = newRegex.exec(text)) !== null) {
+      const dn = match[4];
+      const isRealAddr = dn && looksLikeAddress(dn);
+      const isTruncated = dn && looksLikeTruncated(dn);
+      entries.push({
+        rank: parseInt(match[1]),
+        displayName: dn,
+        xAccount: dn && !isRealAddr && !isTruncated ? dn : undefined,
+        address: isRealAddr ? dn.toLowerCase() : undefined,
+        totalPoints: parseInt(match[2]),
+        weeklyPoints: parseInt(match[3] ?? "0"),
+      });
+    }
   }
 
   return entries;
@@ -60,40 +127,56 @@ async function runSeed(secret: string | null) {
       return NextResponse.json({ error: "No entries parsed from Terminal" }, { status: 502 });
     }
 
-    // Deduplicate
+    // Deduplicate by effective address key
     const seen = new Set<string>();
     const unique = entries.filter((e) => {
-      if (seen.has(e.mainWalletAddress)) return false;
-      seen.add(e.mainWalletAddress);
+      const key = e.address ?? `terminal:rank:${e.rank}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
       return true;
     });
 
-    // Upsert in batches
+    // Upsert in batches of 100
     const CHUNK = 100;
     for (let i = 0; i < unique.length; i += CHUNK) {
       await Promise.all(
-        unique.slice(i, i + CHUNK).map((e) =>
-          prisma.leaderboardEntry.upsert({
-            where: { address: e.mainWalletAddress },
-            update: { xAccount: e.xAccount, totalPoints: e.totalPoints, weeklyPoints: e.weeklyPoints, rank: e.rank },
-            create: { address: e.mainWalletAddress, xAccount: e.xAccount, totalPoints: e.totalPoints, weeklyPoints: e.weeklyPoints, rank: e.rank },
-          })
-        )
+        unique.slice(i, i + CHUNK).map((e) => {
+          const key = e.address ?? `terminal:rank:${e.rank}`;
+          return prisma.leaderboardEntry.upsert({
+            where: { address: key },
+            update: {
+              displayName: e.displayName,
+              xAccount: e.xAccount,
+              totalPoints: e.totalPoints,
+              weeklyPoints: e.weeklyPoints,
+              rank: e.rank,
+            },
+            create: {
+              address: key,
+              displayName: e.displayName,
+              xAccount: e.xAccount,
+              totalPoints: e.totalPoints,
+              weeklyPoints: e.weeklyPoints,
+              rank: e.rank,
+            },
+          });
+        })
       );
     }
 
-    return NextResponse.json({ seeded: unique.length });
+    const withAddress = unique.filter((e) => e.address).length;
+    return NextResponse.json({ seeded: unique.length, withAddress });
   } catch (e) {
     return NextResponse.json({ error: String(e) }, { status: 500 });
   }
 }
 
-// POST: manual trigger
+// POST: manual trigger / background auto-seed
 export async function POST(req: Request) {
   return runSeed(req.headers.get("x-seed-secret"));
 }
 
-// GET: Vercel cron trigger (passes CRON_SECRET as Authorization header)
+// GET: cron trigger
 export async function GET(req: Request) {
   const auth = req.headers.get("authorization") ?? "";
   const secret = auth.startsWith("Bearer ") ? auth.slice(7) : req.headers.get("x-seed-secret");

@@ -75,7 +75,8 @@ model DailyActivity {
 
 model LeaderboardEntry {
   address      String   @id
-  xAccount     String?
+  displayName  String?  // Twitter handle or display name from Terminal (new format)
+  xAccount     String?  // kept for backward compat / TerminalCard display
   totalPoints  Int      @default(0)
   weeklyPoints Int      @default(0)
   rank         Int

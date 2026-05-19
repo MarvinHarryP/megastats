@@ -57,6 +57,7 @@ export default async function LeaderboardPage({
     ? {
         OR: [
           { xAccount: { contains: q } },
+          { displayName: { contains: q } },
           { address: { contains: q } },
         ],
       }
@@ -70,15 +71,15 @@ export default async function LeaderboardPage({
     take: PAGE_SIZE,
   });
 
-  // For tx-sort + track status
-  const walletIds = entries.map((e) => e.address);
+  // For tx-sort + track status — only real wallet addresses (not terminal:rank:X keys)
+  const walletIds = entries.map((e) => e.address).filter((a) => !a.startsWith("terminal:"));
   const wallets = await prisma.walletCache.findMany({
     where: { id: { in: walletIds } },
     select: { id: true, txCount: true, volumeUsd: true, activeDays: true },
   });
   const walletMap = new Map(wallets.map((w) => [w.id, w]));
   // Only mark as tracked if user explicitly clicked Track — not just from a page visit
-  const trackedSet = new Set(entries.filter((e) => e.isTracked).map((e) => e.address));
+  const trackedSet = new Set(entries.filter((e) => e.isTracked && !e.address.startsWith("terminal:")).map((e) => e.address));
 
   let sorted = entries;
   if (sort === "txCount") {
@@ -173,21 +174,23 @@ export default async function LeaderboardPage({
               {top3.map((e, i) => {
                 const style = RANK_STYLE[i];
                 const wallet = walletMap.get(e.address);
-                return (
-                  <Link
-                    key={e.address}
-                    href={`/${e.address}`}
-                    className={`rounded-xl border p-4 space-y-3 hover:scale-[1.02] transition-transform ${style.row}`}
-                  >
+                const isReal = !e.address.startsWith("terminal:");
+                const label = e.xAccount ?? e.displayName;
+                const inner = (
+                  <div className={`rounded-xl border p-4 space-y-3 hover:scale-[1.02] transition-transform ${style.row}`}>
                     <div className="flex items-center justify-between">
                       <span className="text-2xl">{style.medal}</span>
-                      <span className="text-xs font-medium text-primary">#{skip + sorted.indexOf(e) + 1}</span>
+                      <span className="text-xs font-medium text-primary">#{e.rank}</span>
                     </div>
                     <div>
-                      {e.xAccount && (
-                        <p className="text-xs text-muted-foreground font-medium">@{e.xAccount}</p>
+                      {label && (
+                        <p className="text-xs text-muted-foreground font-medium">
+                          {e.xAccount ? `@${label}` : label}
+                        </p>
                       )}
-                      <p className="font-mono text-sm font-semibold text-primary">{formatAddress(e.address, 8)}</p>
+                      <p className="font-mono text-sm font-semibold text-primary">
+                        {isReal ? formatAddress(e.address, 8) : (label ?? `Rank #${e.rank}`)}
+                      </p>
                     </div>
                     <div className="space-y-1">
                       <div>
@@ -200,7 +203,12 @@ export default async function LeaderboardPage({
                         </p>
                       )}
                     </div>
-                  </Link>
+                  </div>
+                );
+                return isReal ? (
+                  <Link key={e.address} href={`/${e.address}`}>{inner}</Link>
+                ) : (
+                  <div key={e.address}>{inner}</div>
                 );
               })}
             </div>
@@ -224,18 +232,25 @@ export default async function LeaderboardPage({
                 {rest.map((e, i) => {
                   const wallet = walletMap.get(e.address);
                   const volUsd = parseFloat(wallet?.volumeUsd ?? "0");
-                  const displayRank = skip + (pageNum === 1 ? 3 : 0) + i + (pageNum === 1 ? 4 : 1);
+                  const isReal = !e.address.startsWith("terminal:");
+                  const label = e.xAccount ?? e.displayName;
                   return (
                     <tr key={e.address} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{displayRank}</td>
+                      <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{e.rank}</td>
                       <td className="px-4 py-3">
                         <div>
                           {e.xAccount && (
                             <p className="text-xs text-muted-foreground">@{e.xAccount}</p>
                           )}
-                          <Link href={`/${e.address}`} className="font-mono text-primary hover:underline">
-                            {formatAddress(e.address, 8)}
-                          </Link>
+                          {isReal ? (
+                            <Link href={`/${e.address}`} className="font-mono text-primary hover:underline">
+                              {formatAddress(e.address, 8)}
+                            </Link>
+                          ) : (
+                            <span className="text-muted-foreground">
+                              {label ?? `Rank #${e.rank}`}
+                            </span>
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right font-semibold">{formatPoints(e.totalPoints)}</td>
@@ -249,7 +264,7 @@ export default async function LeaderboardPage({
                         {volUsd > 0 ? `$${volUsd.toLocaleString("en-US", { maximumFractionDigits: 0 })}` : <span className="opacity-40">—</span>}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <TrackButton address={e.address} alreadyTracked={trackedSet.has(e.address)} />
+                        {isReal && <TrackButton address={e.address} alreadyTracked={trackedSet.has(e.address)} />}
                       </td>
                     </tr>
                   );
