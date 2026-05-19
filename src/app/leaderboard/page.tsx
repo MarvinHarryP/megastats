@@ -176,11 +176,14 @@ export default async function LeaderboardPage({
                 const wallet = walletMap.get(e.address);
                 const isReal = !e.address.startsWith("terminal:");
                 const label = e.xAccount ?? e.displayName;
+                // For totalPoints/txCount sorts, use the position in our sorted list.
+                // For weeklyPoints sort, Terminal's stored rank IS the weekly rank.
+                const displayedRank = sort === "weeklyPoints" ? e.rank : skip + i + 1;
                 const inner = (
                   <div className={`rounded-xl border p-4 space-y-3 hover:scale-[1.02] transition-transform ${style.row}`}>
                     <div className="flex items-center justify-between">
                       <span className="text-2xl">{style.medal}</span>
-                      <span className="text-xs font-medium text-primary">#{e.rank}</span>
+                      <span className="text-xs font-medium text-primary">#{displayedRank}</span>
                     </div>
                     <div>
                       {label && (
@@ -189,7 +192,7 @@ export default async function LeaderboardPage({
                         </p>
                       )}
                       <p className="font-mono text-sm font-semibold text-primary">
-                        {isReal ? formatAddress(e.address, 8) : (label ?? `Rank #${e.rank}`)}
+                        {isReal ? formatAddress(e.address, 8) : (label ?? `Rank #${displayedRank}`)}
                       </p>
                     </div>
                     <div className="space-y-1">
@@ -234,9 +237,12 @@ export default async function LeaderboardPage({
                   const volUsd = parseFloat(wallet?.volumeUsd ?? "0");
                   const isReal = !e.address.startsWith("terminal:");
                   const label = e.xAccount ?? e.displayName;
+                  // Position-based rank for totalPoints/txCount; Terminal's rank for weeklyPoints
+                  const positionInList = (pageNum === 1 ? 3 : 0) + i + 1;
+                  const displayedRank = sort === "weeklyPoints" ? e.rank : skip + positionInList;
                   return (
                     <tr key={e.address} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                      <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{e.rank}</td>
+                      <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{displayedRank}</td>
                       <td className="px-4 py-3">
                         <div>
                           {e.xAccount && (
@@ -248,7 +254,7 @@ export default async function LeaderboardPage({
                             </Link>
                           ) : (
                             <span className="text-muted-foreground">
-                              {label ?? `Rank #${e.rank}`}
+                              {label ?? `Rank #${displayedRank}`}
                             </span>
                           )}
                         </div>
