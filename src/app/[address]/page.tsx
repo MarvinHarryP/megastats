@@ -18,6 +18,7 @@ import { NFTGallery } from "@/components/stats/NFTGallery";
 import { DeFiPositions } from "@/components/stats/DeFiPositions";
 import { fetchDefiPositions } from "@/lib/defi-fetcher";
 import { TerminalCard } from "@/components/stats/TerminalCard";
+import { TerminalLookup } from "@/components/stats/TerminalLookup";
 import { ClusterSection } from "@/components/cluster/ClusterSection";
 
 interface Props {
@@ -102,7 +103,7 @@ export default async function AddressPage({ params }: Props) {
         </div>
       </div>
 
-      {terminalEntry && (
+      {terminalEntry ? (
         <TerminalCard
           rank={terminalEntry.rank}
           totalPoints={terminalEntry.totalPoints}
@@ -112,6 +113,8 @@ export default async function AddressPage({ params }: Props) {
           totalPointsSum={terminalPointsSum}
           megaPrice={megaPrice}
         />
+      ) : (
+        <TerminalLookup address={address} megaPrice={megaPrice} />
       )}
 
       <div className="space-y-2">
