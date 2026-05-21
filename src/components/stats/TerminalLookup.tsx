@@ -43,14 +43,14 @@ export function TerminalLookup({ address, megaPrice }: Props) {
       const res = await fetch(`/api/terminal/lookup?handle=${encodeURIComponent(handle)}`);
       const data = await res.json();
       if (!res.ok) {
-        setError("X-Handle nicht im Leaderboard gefunden.");
+        setError("X handle not found in leaderboard.");
         if (save) localStorage.removeItem(STORAGE_KEY(address));
       } else {
         setEntry(data);
         if (save) localStorage.setItem(STORAGE_KEY(address), handle.replace(/^@/, ""));
       }
     } catch {
-      setError("Fehler beim Laden.");
+      setError("Failed to load data.");
     } finally {
       setLoading(false);
       setChecked(true);
@@ -88,7 +88,7 @@ export function TerminalLookup({ address, megaPrice }: Props) {
           onClick={handleReset}
           className="text-xs text-muted-foreground hover:text-foreground transition-colors px-1"
         >
-          ✕ Terminal-Verknüpfung entfernen
+          ✕ Unlink Terminal handle
         </button>
       </div>
     );
@@ -100,7 +100,7 @@ export function TerminalLookup({ address, megaPrice }: Props) {
         <span className="text-lg">⚡</span>
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground leading-none">Terminal</p>
-          <p className="text-xs text-muted-foreground mt-0.5">Verknüpfe deinen X-Handle</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Link your X handle to see your stats</p>
         </div>
       </div>
       <form onSubmit={handleSubmit} className="flex gap-2 flex-1">
@@ -115,7 +115,7 @@ export function TerminalLookup({ address, megaPrice }: Props) {
           disabled={loading}
           className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 shrink-0"
         >
-          {loading ? "…" : "Suchen"}
+          {loading ? "…" : "Search"}
         </button>
       </form>
       {error && <p className="text-xs text-destructive sm:ml-2">{error}</p>}
