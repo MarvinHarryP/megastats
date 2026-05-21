@@ -107,18 +107,20 @@ async function fetchLeaderboard(): Promise<TerminalEntry[]> {
 
 const TWENTY_THREE_HOURS = 23 * 60 * 60 * 1000;
 
-async function runSeed(secret: string | null) {
+async function runSeed(secret: string | null, force = false) {
   if (secret !== (process.env.SEED_SECRET ?? "megastats-seed")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Skip if seeded less than 23 hours ago
-  const latest = await prisma.leaderboardEntry.findFirst({
-    orderBy: { updatedAt: "desc" },
-    select: { updatedAt: true },
-  });
-  if (latest && Date.now() - latest.updatedAt.getTime() < TWENTY_THREE_HOURS) {
-    return NextResponse.json({ skipped: true, reason: "seeded recently" });
+  // Skip if seeded less than 23 hours ago (unless force=true)
+  if (!force) {
+    const latest = await prisma.leaderboardEntry.findFirst({
+      orderBy: { updatedAt: "desc" },
+      select: { updatedAt: true },
+    });
+    if (latest && Date.now() - latest.updatedAt.getTime() < TWENTY_THREE_HOURS) {
+      return NextResponse.json({ skipped: true, reason: "seeded recently" });
+    }
   }
 
   try {
@@ -173,12 +175,16 @@ async function runSeed(secret: string | null) {
 
 // POST: manual trigger / background auto-seed
 export async function POST(req: Request) {
-  return runSeed(req.headers.get("x-seed-secret"));
+  const url = new URL(req.url);
+  const force = url.searchParams.get("force") === "true";
+  return runSeed(req.headers.get("x-seed-secret"), force);
 }
 
 // GET: cron trigger
 export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const force = url.searchParams.get("force") === "true";
   const auth = req.headers.get("authorization") ?? "";
   const secret = auth.startsWith("Bearer ") ? auth.slice(7) : req.headers.get("x-seed-secret");
-  return runSeed(secret);
+  return runSeed(secret, force);
 }
