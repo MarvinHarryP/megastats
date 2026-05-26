@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
 
 interface Props {
   rank: number;
@@ -10,8 +13,7 @@ interface Props {
   megaPrice: number | null;
 }
 
-const SEASON1_POOL = 62_500_000; // 250M total ÷ 4 estimated seasons
-const DISCOUNT = 0.8; // 20% discount for missing wallets / uncertainty
+const USDM_RATES = [0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.50];
 
 function formatPoints(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
@@ -19,19 +21,13 @@ function formatPoints(n: number): string {
   return n.toLocaleString();
 }
 
-function formatMega(n: number): string {
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + "M";
-  if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
-  return n.toFixed(0);
-}
-
 export function TerminalCard({
   rank, totalPoints, weeklyPoints, xAccount,
-  totalInLeaderboard, totalPointsSum, megaPrice,
+  totalInLeaderboard,
 }: Props) {
-  const share = totalPointsSum > 0 ? totalPoints / totalPointsSum : 0;
-  const estimatedMega = share * SEASON1_POOL * DISCOUNT;
-  const estimatedUsd = megaPrice ? estimatedMega * megaPrice : null;
+  const [selectedRate, setSelectedRate] = useState(0.20);
+  const estimatedUsdm = totalPoints * selectedRate;
+
   const percentile = totalInLeaderboard > 0
     ? Math.round((1 - (rank - 1) / totalInLeaderboard) * 100)
     : null;
@@ -106,26 +102,38 @@ export function TerminalCard({
         </div>
       </div>
 
-      {/* ── Airdrop strip ── */}
-      {estimatedMega > 0 && (
-        <div className="border-t border-border/60 bg-muted/20 px-4 py-3 flex items-center gap-4 flex-wrap">
-          <span className="text-xl">🪂</span>
-          <div>
-            <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Est. Airdrop for Szn 1</p>
-            <p className="text-lg font-bold leading-tight">
-              ~{formatMega(estimatedMega)} MEGA
-              {estimatedUsd !== null && (
-                <span className="text-base text-muted-foreground font-normal ml-2">
-                  ≈ ${estimatedUsd.toLocaleString("en-US", { maximumFractionDigits: 0 })}
-                </span>
-              )}
-            </p>
+      {/* ── USDM Rewards Calculator ── */}
+      <div className="border-t border-border/60 bg-muted/20 px-4 py-3 space-y-2">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-base">💰</span>
+            <div>
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">USDM Rewards Calculator</p>
+              <p className="text-lg font-bold leading-tight">
+                ~${estimatedUsdm.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USDM
+              </p>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground ml-auto italic hidden sm:block">
-            2.5% of supply (250M MEGA) planned for all seasons · assumes 4 seasons → 62.5M for Szn 1 · 20% discount applied · actual may differ
-          </p>
+          <div className="flex flex-wrap gap-1">
+            {USDM_RATES.map((rate) => (
+              <button
+                key={rate}
+                onClick={() => setSelectedRate(rate)}
+                className={`px-2 py-0.5 rounded text-xs font-medium border transition-colors ${
+                  selectedRate === rate
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "text-muted-foreground border-border hover:text-foreground hover:border-foreground"
+                }`}
+              >
+                ${rate.toFixed(2)}
+              </button>
+            ))}
+          </div>
         </div>
-      )}
+        <p className="text-xs text-muted-foreground italic">
+          Terminal ended early (Week 3) · Rewards paid in USDM · Claim window opens ~May 26 · community estimates only
+        </p>
+      </div>
     </div>
   );
 }
