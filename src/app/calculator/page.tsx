@@ -25,19 +25,15 @@ export default function CalculatorPage() {
     const isAddress = /^0x[a-fA-F0-9]{40}$/i.test(val);
     try {
       if (isAddress) {
-        const res = await fetch(`/api/cluster/${val.toLowerCase()}`);
+        const res = await fetch(`/api/terminal/lookup?address=${encodeURIComponent(val.toLowerCase())}`);
         if (res.ok) {
-          // Try to get terminal entry via leaderboard
-          const r2 = await fetch(`/api/terminal/lookup?handle=${encodeURIComponent(val)}`);
-          if (r2.ok) {
-            const d = await r2.json();
-            setPoints(d.totalPoints.toString());
-            setLoadingLookup(false);
-            return;
-          }
+          const d = await res.json();
+          setPoints(d.totalPoints.toString());
+          setLoadingLookup(false);
+          return;
         }
-        // fallback: just go to wallet page
-        setLookupError("Wallet not found in Terminal leaderboard. Enter points manually.");
+        // Wallet address not found — Terminal doesn't expose wallet addresses publicly
+        setLookupError("Wallet not linked to Terminal leaderboard. Try your X handle (e.g. @username) instead, or enter points manually.");
       } else {
         // X handle lookup
         const res = await fetch(`/api/terminal/lookup?handle=${encodeURIComponent(val)}`);
