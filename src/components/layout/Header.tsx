@@ -52,6 +52,13 @@ export function Header() {
 
         {/* Desktop nav links */}
         <a
+          href="/calculator"
+          className="hidden sm:flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/60 transition-colors shrink-0 animate-pulse"
+        >
+          💰 Calculator
+        </a>
+
+        <a
           href="/swap"
           className="hidden sm:flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 hover:bg-blue-200 dark:hover:bg-blue-900/60 transition-colors shrink-0"
         >
@@ -107,6 +114,13 @@ export function Header() {
       {/* Mobile dropdown menu */}
       {menuOpen && (
         <div className="sm:hidden border-t bg-background px-4 py-3 flex flex-col gap-1">
+          <a
+            href="/calculator"
+            onClick={() => setMenuOpen(false)}
+            className="flex items-center gap-2 text-sm font-medium px-3 py-2.5 rounded-md hover:bg-muted transition-colors text-green-700 dark:text-green-400"
+          >
+            💰 Calculator
+          </a>
           <a
             href="/swap"
             onClick={() => setMenuOpen(false)}
