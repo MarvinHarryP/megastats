@@ -69,10 +69,11 @@ async function fetchLeaderboard(): Promise<TerminalEntry[]> {
           const dn: string | undefined = obj.displayName ?? obj.xAccount;
           const isRealAddr = dn && looksLikeAddress(dn);
           const isTruncated = dn && looksLikeTruncated(dn);
+          const dnLower = dn?.toLowerCase();
           entries.push({
             rank: obj.rank,
-            displayName: dn,
-            xAccount: dn && !isRealAddr && !isTruncated ? dn : undefined,
+            displayName: dnLower,
+            xAccount: dnLower && !isRealAddr && !isTruncated ? dnLower : undefined,
             address: isRealAddr ? dn!.toLowerCase() : undefined,
             totalPoints: obj.totalPoints,
             weeklyPoints,
@@ -91,10 +92,11 @@ async function fetchLeaderboard(): Promise<TerminalEntry[]> {
       const dn = match[4];
       const isRealAddr = dn && looksLikeAddress(dn);
       const isTruncated = dn && looksLikeTruncated(dn);
+      const dnLower2 = dn?.toLowerCase();
       entries.push({
         rank: parseInt(match[1]),
-        displayName: dn,
-        xAccount: dn && !isRealAddr && !isTruncated ? dn : undefined,
+        displayName: dnLower2,
+        xAccount: dnLower2 && !isRealAddr && !isTruncated ? dnLower2 : undefined,
         address: isRealAddr ? dn.toLowerCase() : undefined,
         totalPoints: parseInt(match[2]),
         weeklyPoints: parseInt(match[3] ?? "0"),
