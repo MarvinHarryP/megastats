@@ -26,7 +26,9 @@ export function TerminalCard({
   totalInLeaderboard,
 }: Props) {
   const [selectedRate, setSelectedRate] = useState(0.20);
-  const estimatedUsdm = totalPoints * selectedRate;
+  const [customPoints, setCustomPoints] = useState<string>("");
+  const activePoints = customPoints !== "" ? parseFloat(customPoints) || 0 : totalPoints;
+  const estimatedUsdm = activePoints * selectedRate;
 
   const percentile = totalInLeaderboard > 0
     ? Math.round((1 - (rank - 1) / totalInLeaderboard) * 100)
@@ -130,8 +132,26 @@ export function TerminalCard({
             ))}
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min="0"
+            value={customPoints}
+            onChange={(e) => setCustomPoints(e.target.value)}
+            placeholder={`${totalPoints.toLocaleString()} pts (your wallet)`}
+            className="flex-1 rounded-lg border border-border bg-background px-3 py-1 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+          />
+          {customPoints !== "" && (
+            <button
+              onClick={() => setCustomPoints("")}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              ✕
+            </button>
+          )}
+        </div>
         <p className="text-xs text-muted-foreground italic">
-          Terminal ended early (Week 3) · Rewards paid in USDM · Claim window opens ~May 26 · community estimates only
+          Terminal ended early (Week 3) · Rewards paid in USDM · community estimates only
         </p>
       </div>
     </div>
