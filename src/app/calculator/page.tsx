@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-const USDM_RATES = [0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.50];
+const USDM_RATES = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.50, 1.00];
 
 export default function CalculatorPage() {
   const [points, setPoints] = useState("");
@@ -139,7 +139,7 @@ export default function CalculatorPage() {
         {numPoints > 0 && (
           <div className="space-y-2">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">All scenarios</p>
-            <div className="grid grid-cols-4 gap-2">
+            <div className="grid grid-cols-5 gap-2">
               {USDM_RATES.map((rate) => (
                 <button
                   key={rate}

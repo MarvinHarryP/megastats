@@ -13,7 +13,7 @@ interface Props {
   megaPrice: number | null;
 }
 
-const USDM_RATES = [0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.50];
+const USDM_RATES = [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.50, 1.00];
 
 function formatPoints(n: number): string {
   if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
