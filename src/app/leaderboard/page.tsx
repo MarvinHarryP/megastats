@@ -117,13 +117,11 @@ export default async function LeaderboardPage({
   // Only mark as tracked if user explicitly clicked Track — not just from a page visit
   const trackedSet = new Set(sorted.filter((e) => e.isTracked && !e.address.startsWith("terminal:")).map((e) => e.address));
 
-  const [totalCount, totalPointsAgg, weeklyPointsAgg] = await Promise.all([
+  const [totalCount, totalPointsAgg] = await Promise.all([
     prisma.leaderboardEntry.count(),
     prisma.leaderboardEntry.aggregate({ _sum: { totalPoints: true } }),
-    prisma.leaderboardEntry.aggregate({ _sum: { weeklyPoints: true } }),
   ]);
   const totalPointsDistributed = totalPointsAgg._sum.totalPoints ?? 0;
-  const totalWeeklyPoints = weeklyPointsAgg._sum.weeklyPoints ?? 1;
   const filteredCount = q ? sorted.length : totalCount;
   const totalPages = q ? 1 : Math.ceil(totalCount / PAGE_SIZE);
   // When searching, skip the podium — show all results in table with real rank
@@ -232,7 +230,7 @@ export default async function LeaderboardPage({
                         {e.weeklyPoints > 0 && (
                           <p className="text-xs text-green-500 font-medium">
                             +{formatPoints(e.weeklyPoints)} this week
-                            <span className="text-muted-foreground ml-1">({((e.weeklyPoints / totalWeeklyPoints) * 100).toFixed(2)}% of pot)</span>
+                            <span className="text-muted-foreground ml-1">({Math.round((e.weeklyPoints / e.totalPoints) * 100)}% of total)</span>
                           </p>
                         )}
                       </div>
@@ -301,7 +299,7 @@ export default async function LeaderboardPage({
                         {e.weeklyPoints > 0 ? (
                           <div>
                             <span className="text-green-500 font-medium">+{formatPoints(e.weeklyPoints)}</span>
-                            <p className="text-xs text-muted-foreground">{((e.weeklyPoints / totalWeeklyPoints) * 100).toFixed(2)}%</p>
+                            <p className="text-xs text-muted-foreground">{Math.round((e.weeklyPoints / e.totalPoints) * 100)}% of total</p>
                           </div>
                         ) : "—"}
                       </td>
