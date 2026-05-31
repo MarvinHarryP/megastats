@@ -207,11 +207,40 @@ export default async function LeaderboardPage({
       </form>
 
       {q && (
-        <p className="text-center text-sm text-muted-foreground -mt-2">
-          {filteredCount === 0
-            ? `No results for "${q}"`
-            : `${filteredCount} result${filteredCount === 1 ? "" : "s"} for "${q}"`}
-        </p>
+        <div className="-mt-2 space-y-3">
+          <p className="text-center text-sm text-muted-foreground">
+            {filteredCount === 0
+              ? `No results for "${q}"`
+              : `${filteredCount} result${filteredCount === 1 ? "" : "s"} for "${q}"`}
+          </p>
+
+          {/* USDM + Percentile card for search matches */}
+          {matchedAddresses.size > 0 && matchedAddresses.size <= 3 && sorted.filter(e => matchedAddresses.has(e.address)).map(match => {
+            const percentile = Math.round((1 - (match.rank - 1) / totalCount) * 100);
+            const usdm = (match.totalPoints * 0.20).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            const label = match.xAccount ?? match.displayName;
+            return (
+              <div key={match.address} className="rounded-xl border bg-card px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">📊</span>
+                  <div>
+                    <p className="text-xs text-muted-foreground font-medium">{label ? `@${label}` : match.address}</p>
+                    <p className="text-sm font-semibold">Top <span className="text-primary">{percentile}%</span> · {match.totalPoints.toLocaleString()} pts</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">Est. USDM at $0.20/pt</p>
+                    <p className="text-lg font-bold text-green-500">${usdm}</p>
+                  </div>
+                  <Link href="/calculator" className="text-xs px-3 py-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground transition-colors whitespace-nowrap">
+                    Calculator →
+                  </Link>
+                </div>
+              </div>
+            );
+          })}
+        </div>
       )}
 
       {sorted.length === 0 ? (
