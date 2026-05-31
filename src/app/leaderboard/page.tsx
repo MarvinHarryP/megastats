@@ -211,12 +211,7 @@ export default async function LeaderboardPage({
                   <div className={`rounded-xl border p-4 space-y-3 hover:scale-[1.02] transition-transform ${style.row}`}>
                     <div className="flex items-center justify-between">
                       <span className="text-2xl">{style.medal}</span>
-                      <div className="flex items-center gap-1.5">
-                        {e.weeklyPoints > 0 && e.weeklyPoints / e.totalPoints >= 0.75 && (
-                          <span title="75%+ of points earned this week" className="text-base">🔥</span>
-                        )}
-                        <span className="text-xs font-medium text-primary">#{displayedRank}</span>
-                      </div>
+                      <span className="text-xs font-medium text-primary">#{displayedRank}</span>
                     </div>
                     <div>
                       {label && (
@@ -235,7 +230,7 @@ export default async function LeaderboardPage({
                         {e.weeklyPoints > 0 && (
                           <p className="text-xs text-green-500 font-medium">
                             +{formatPoints(e.weeklyPoints)} this week
-                            <span className="text-muted-foreground ml-1">({Math.round((e.weeklyPoints / e.totalPoints) * 100)}% of total)</span>
+                            <span className="text-muted-foreground ml-1">({Math.round((e.weeklyPoints / e.totalPoints) * 100)}% of total{e.weeklyPoints / e.totalPoints >= 0.75 ? " 🔥" : ""})</span>
                           </p>
                         )}
                       </div>
@@ -286,12 +281,9 @@ export default async function LeaderboardPage({
                       <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{displayedRank}</td>
                       <td className="px-4 py-3">
                         <div>
-                          <div className="flex items-center gap-1.5">
-                            {isHotThisWeek && <span title="75%+ of points earned this week">🔥</span>}
-                            {e.xAccount && (
-                              <p className="text-xs text-muted-foreground">@{e.xAccount}</p>
-                            )}
-                          </div>
+                          {e.xAccount && (
+                            <p className="text-xs text-muted-foreground">@{e.xAccount}</p>
+                          )}
                           {isReal ? (
                             <Link href={`/${e.address}`} className="font-mono text-primary hover:underline">
                               {formatAddress(e.address, 8)}
@@ -308,7 +300,9 @@ export default async function LeaderboardPage({
                         {e.weeklyPoints > 0 ? (
                           <div>
                             <span className="text-green-500 font-medium">+{formatPoints(e.weeklyPoints)}</span>
-                            <p className="text-xs text-muted-foreground">{Math.round((e.weeklyPoints / e.totalPoints) * 100)}% of total</p>
+                            <p className="text-xs text-muted-foreground">
+                              {Math.round((e.weeklyPoints / e.totalPoints) * 100)}% of total{isHotThisWeek && " 🔥"}
+                            </p>
                           </div>
                         ) : "—"}
                       </td>
@@ -351,6 +345,9 @@ export default async function LeaderboardPage({
         </>
       )}
 
+      <div className="flex items-center justify-center gap-4 text-xs text-muted-foreground pb-1">
+        <span>🔥 = 75%+ of total points earned this week</span>
+      </div>
       <p className="text-xs text-muted-foreground text-center pb-4">
         Data from terminal.megaeth.com · Tx stats load on first wallet visit · Season 1 ends June 23, 2026
       </p>
