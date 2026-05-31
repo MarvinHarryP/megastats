@@ -211,7 +211,12 @@ export default async function LeaderboardPage({
                   <div className={`rounded-xl border p-4 space-y-3 hover:scale-[1.02] transition-transform ${style.row}`}>
                     <div className="flex items-center justify-between">
                       <span className="text-2xl">{style.medal}</span>
-                      <span className="text-xs font-medium text-primary">#{displayedRank}</span>
+                      <div className="flex items-center gap-1.5">
+                        {e.weeklyPoints > 0 && e.weeklyPoints / e.totalPoints >= 0.75 && (
+                          <span title="75%+ of points earned this week" className="text-base">🔥</span>
+                        )}
+                        <span className="text-xs font-medium text-primary">#{displayedRank}</span>
+                      </div>
                     </div>
                     <div>
                       {label && (
@@ -275,14 +280,18 @@ export default async function LeaderboardPage({
                   const positionInList = (pageNum === 1 && !q ? 3 : 0) + i + 1;
                   const displayedRank = q ? e.rank : sort === "weeklyPoints" ? e.rank : skip + positionInList;
                   const isMatch = q ? matchedAddresses.has(e.address) : false;
+                  const isHotThisWeek = e.weeklyPoints > 0 && e.weeklyPoints / e.totalPoints >= 0.75;
                   return (
                     <tr key={e.address} className={`border-b last:border-0 transition-colors ${isMatch ? "bg-primary/5 border-l-2 border-l-primary" : "hover:bg-muted/30"}`}>
                       <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{displayedRank}</td>
                       <td className="px-4 py-3">
                         <div>
-                          {e.xAccount && (
-                            <p className="text-xs text-muted-foreground">@{e.xAccount}</p>
-                          )}
+                          <div className="flex items-center gap-1.5">
+                            {isHotThisWeek && <span title="75%+ of points earned this week">🔥</span>}
+                            {e.xAccount && (
+                              <p className="text-xs text-muted-foreground">@{e.xAccount}</p>
+                            )}
+                          </div>
                           {isReal ? (
                             <Link href={`/${e.address}`} className="font-mono text-primary hover:underline">
                               {formatAddress(e.address, 8)}
