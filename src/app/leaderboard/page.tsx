@@ -71,24 +71,51 @@ export default async function LeaderboardPage({
     take: PAGE_SIZE,
   });
 
+  // When searching, also fetch 5 entries above + below each match by rank for context
+  const matchedAddresses = new Set<string>();
+  let sorted = entries;
+
+  if (q && entries.length > 0) {
+    entries.forEach((e) => matchedAddresses.add(e.address));
+    const CONTEXT = 5;
+    const contextResults = await Promise.all(
+      entries.map((match) =>
+        prisma.leaderboardEntry.findMany({
+          where: { rank: { gte: match.rank - CONTEXT, lte: match.rank + CONTEXT } },
+          orderBy: sort === "weeklyPoints" ? { weeklyPoints: "desc" } : { totalPoints: "desc" },
+        })
+      )
+    );
+    // Merge + deduplicate, keep order
+    const seen = new Set<string>();
+    const merged = [...entries, ...contextResults.flat()].filter((e) => {
+      if (seen.has(e.address)) return false;
+      seen.add(e.address);
+      return true;
+    });
+    sorted = merged.sort((a, b) =>
+      sort === "weeklyPoints" ? b.weeklyPoints - a.weeklyPoints : b.totalPoints - a.totalPoints
+    );
+  }
+
   // For tx-sort + track status — only real wallet addresses (not terminal:rank:X keys)
-  const walletIds = entries.map((e) => e.address).filter((a) => !a.startsWith("terminal:"));
+  const walletIds = sorted.map((e) => e.address).filter((a) => !a.startsWith("terminal:"));
   const wallets = await prisma.walletCache.findMany({
     where: { id: { in: walletIds } },
     select: { id: true, txCount: true, volumeUsd: true, activeDays: true },
   });
   const walletMap = new Map(wallets.map((w) => [w.id, w]));
-  // Only mark as tracked if user explicitly clicked Track — not just from a page visit
-  const trackedSet = new Set(entries.filter((e) => e.isTracked && !e.address.startsWith("terminal:")).map((e) => e.address));
 
-  let sorted = entries;
-  if (sort === "txCount") {
-    sorted = [...entries].sort((a, b) => {
+  if (!q && sort === "txCount") {
+    sorted = [...sorted].sort((a, b) => {
       const wa = walletMap.get(a.address);
       const wb = walletMap.get(b.address);
       return (wb?.txCount ?? 0) - (wa?.txCount ?? 0);
     });
   }
+
+  // Only mark as tracked if user explicitly clicked Track — not just from a page visit
+  const trackedSet = new Set(sorted.filter((e) => e.isTracked && !e.address.startsWith("terminal:")).map((e) => e.address));
 
   const [totalCount, totalPointsAgg] = await Promise.all([
     prisma.leaderboardEntry.count(),
@@ -241,8 +268,9 @@ export default async function LeaderboardPage({
                   // Position-based rank for totalPoints/txCount; Terminal's rank for weeklyPoints
                   const positionInList = (pageNum === 1 && !q ? 3 : 0) + i + 1;
                   const displayedRank = q ? e.rank : sort === "weeklyPoints" ? e.rank : skip + positionInList;
+                  const isMatch = q ? matchedAddresses.has(e.address) : false;
                   return (
-                    <tr key={e.address} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                    <tr key={e.address} className={`border-b last:border-0 transition-colors ${isMatch ? "bg-primary/5 border-l-2 border-l-primary" : "hover:bg-muted/30"}`}>
                       <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{displayedRank}</td>
                       <td className="px-4 py-3">
                         <div>
