@@ -227,6 +227,9 @@ export default async function LeaderboardPage({
                       <div>
                         <p className="text-xs text-muted-foreground">Terminal Points</p>
                         <p className="font-bold text-lg">{formatPoints(e.totalPoints)}</p>
+                        {e.weeklyPoints > 0 && (
+                          <p className="text-xs text-green-500 font-medium">+{formatPoints(e.weeklyPoints)} this week</p>
+                        )}
                       </div>
                       {wallet && (
                         <p className="text-xs text-muted-foreground">
