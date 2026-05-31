@@ -311,7 +311,7 @@ export default async function LeaderboardPage({
                               {Math.round((e.weeklyPoints / e.totalPoints) * 100)}% of total{isHotThisWeek && (
                                 <span className="relative group ml-0.5 cursor-default">
                                   🔥
-                                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-50 w-48 rounded-md bg-popover border border-border shadow-md px-2.5 py-1.5 text-xs text-popover-foreground whitespace-normal text-center pointer-events-none">
+                                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-50 w-48 rounded-md bg-gray-900 dark:bg-gray-100 shadow-md px-2.5 py-1.5 text-xs text-gray-100 dark:text-gray-900 whitespace-normal text-center pointer-events-none">
                                     75%+ of total points earned this week
                                   </span>
                                 </span>
