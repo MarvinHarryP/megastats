@@ -97,8 +97,9 @@ export default async function LeaderboardPage({
   const totalPointsDistributed = totalPointsAgg._sum.totalPoints ?? 0;
   const filteredCount = q ? sorted.length : totalCount;
   const totalPages = q ? 1 : Math.ceil(totalCount / PAGE_SIZE);
-  const top3 = pageNum === 1 ? sorted.slice(0, 3) : [];
-  const rest = pageNum === 1 ? sorted.slice(3) : sorted;
+  // When searching, skip the podium — show all results in table with real rank
+  const top3 = pageNum === 1 && !q ? sorted.slice(0, 3) : [];
+  const rest = pageNum === 1 && !q ? sorted.slice(3) : sorted;
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -238,8 +239,8 @@ export default async function LeaderboardPage({
                   const isReal = !e.address.startsWith("terminal:");
                   const label = e.xAccount ?? e.displayName;
                   // Position-based rank for totalPoints/txCount; Terminal's rank for weeklyPoints
-                  const positionInList = (pageNum === 1 ? 3 : 0) + i + 1;
-                  const displayedRank = sort === "weeklyPoints" ? e.rank : skip + positionInList;
+                  const positionInList = (pageNum === 1 && !q ? 3 : 0) + i + 1;
+                  const displayedRank = q ? e.rank : sort === "weeklyPoints" ? e.rank : skip + positionInList;
                   return (
                     <tr key={e.address} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
                       <td className="px-4 py-3 text-muted-foreground font-mono text-xs">{displayedRank}</td>
