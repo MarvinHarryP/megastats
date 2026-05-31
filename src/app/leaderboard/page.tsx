@@ -230,7 +230,14 @@ export default async function LeaderboardPage({
                         {e.weeklyPoints > 0 && (
                           <p className="text-xs text-green-500 font-medium">
                             +{formatPoints(e.weeklyPoints)} this week
-                            <span className="text-muted-foreground ml-1">({Math.round((e.weeklyPoints / e.totalPoints) * 100)}% of total{e.weeklyPoints / e.totalPoints >= 0.75 ? <span title="Over 75% of this wallet's total points were earned this week" className="cursor-help ml-0.5">🔥</span> : ""})</span>
+                            <span className="text-muted-foreground ml-1">({Math.round((e.weeklyPoints / e.totalPoints) * 100)}% of total{e.weeklyPoints / e.totalPoints >= 0.75 ? (
+                              <span className="relative group ml-0.5 cursor-default">
+                                🔥
+                                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-50 w-48 rounded-md bg-popover border border-border shadow-md px-2.5 py-1.5 text-xs text-popover-foreground whitespace-normal text-center pointer-events-none">
+                                  75%+ of total points earned this week
+                                </span>
+                              </span>
+                            ) : ""})</span>
                           </p>
                         )}
                       </div>
@@ -301,7 +308,14 @@ export default async function LeaderboardPage({
                           <div>
                             <span className="text-green-500 font-medium">+{formatPoints(e.weeklyPoints)}</span>
                             <p className="text-xs text-muted-foreground">
-                              {Math.round((e.weeklyPoints / e.totalPoints) * 100)}% of total{isHotThisWeek && <span title="Over 75% of this wallet's total points were earned this week" className="cursor-help ml-0.5">🔥</span>}
+                              {Math.round((e.weeklyPoints / e.totalPoints) * 100)}% of total{isHotThisWeek && (
+                                <span className="relative group ml-0.5 cursor-default">
+                                  🔥
+                                  <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 hidden group-hover:block z-50 w-48 rounded-md bg-popover border border-border shadow-md px-2.5 py-1.5 text-xs text-popover-foreground whitespace-normal text-center pointer-events-none">
+                                    75%+ of total points earned this week
+                                  </span>
+                                </span>
+                              )}
                             </p>
                           </div>
                         ) : "—"}
