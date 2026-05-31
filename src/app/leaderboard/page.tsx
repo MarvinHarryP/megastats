@@ -117,11 +117,13 @@ export default async function LeaderboardPage({
   // Only mark as tracked if user explicitly clicked Track — not just from a page visit
   const trackedSet = new Set(sorted.filter((e) => e.isTracked && !e.address.startsWith("terminal:")).map((e) => e.address));
 
-  const [totalCount, totalPointsAgg] = await Promise.all([
+  const [totalCount, totalPointsAgg, weeklyPointsAgg] = await Promise.all([
     prisma.leaderboardEntry.count(),
     prisma.leaderboardEntry.aggregate({ _sum: { totalPoints: true } }),
+    prisma.leaderboardEntry.aggregate({ _sum: { weeklyPoints: true } }),
   ]);
   const totalPointsDistributed = totalPointsAgg._sum.totalPoints ?? 0;
+  const totalWeeklyPoints = weeklyPointsAgg._sum.weeklyPoints ?? 1;
   const filteredCount = q ? sorted.length : totalCount;
   const totalPages = q ? 1 : Math.ceil(totalCount / PAGE_SIZE);
   // When searching, skip the podium — show all results in table with real rank
@@ -228,7 +230,10 @@ export default async function LeaderboardPage({
                         <p className="text-xs text-muted-foreground">Terminal Points</p>
                         <p className="font-bold text-lg">{formatPoints(e.totalPoints)}</p>
                         {e.weeklyPoints > 0 && (
-                          <p className="text-xs text-green-500 font-medium">+{formatPoints(e.weeklyPoints)} this week</p>
+                          <p className="text-xs text-green-500 font-medium">
+                            +{formatPoints(e.weeklyPoints)} this week
+                            <span className="text-muted-foreground ml-1">({((e.weeklyPoints / totalWeeklyPoints) * 100).toFixed(2)}% of pot)</span>
+                          </p>
                         )}
                       </div>
                       {wallet && (
@@ -292,8 +297,13 @@ export default async function LeaderboardPage({
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right font-semibold">{formatPoints(e.totalPoints)}</td>
-                      <td className="px-4 py-3 text-right text-muted-foreground hidden sm:table-cell">
-                        {e.weeklyPoints > 0 ? `+${formatPoints(e.weeklyPoints)}` : "—"}
+                      <td className="px-4 py-3 text-right hidden sm:table-cell">
+                        {e.weeklyPoints > 0 ? (
+                          <div>
+                            <span className="text-green-500 font-medium">+{formatPoints(e.weeklyPoints)}</span>
+                            <p className="text-xs text-muted-foreground">{((e.weeklyPoints / totalWeeklyPoints) * 100).toFixed(2)}%</p>
+                          </div>
+                        ) : "—"}
                       </td>
                       <td className="px-4 py-3 text-right text-muted-foreground hidden md:table-cell">
                         {wallet ? wallet.txCount.toLocaleString() : <span className="opacity-40">—</span>}
