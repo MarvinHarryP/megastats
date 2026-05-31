@@ -230,7 +230,7 @@ export default async function LeaderboardPage({
                         {e.weeklyPoints > 0 && (
                           <p className="text-xs text-green-500 font-medium">
                             +{formatPoints(e.weeklyPoints)} this week
-                            <span className="text-muted-foreground ml-1">({Math.round((e.weeklyPoints / e.totalPoints) * 100)}% of total{e.weeklyPoints / e.totalPoints >= 0.75 ? " 🔥" : ""})</span>
+                            <span className="text-muted-foreground ml-1">({Math.round((e.weeklyPoints / e.totalPoints) * 100)}% of total{e.weeklyPoints / e.totalPoints >= 0.75 ? <span title="Over 75% of this wallet's total points were earned this week" className="cursor-help ml-0.5">🔥</span> : ""})</span>
                           </p>
                         )}
                       </div>
@@ -301,7 +301,7 @@ export default async function LeaderboardPage({
                           <div>
                             <span className="text-green-500 font-medium">+{formatPoints(e.weeklyPoints)}</span>
                             <p className="text-xs text-muted-foreground">
-                              {Math.round((e.weeklyPoints / e.totalPoints) * 100)}% of total{isHotThisWeek && " 🔥"}
+                              {Math.round((e.weeklyPoints / e.totalPoints) * 100)}% of total{isHotThisWeek && <span title="Over 75% of this wallet's total points were earned this week" className="cursor-help ml-0.5">🔥</span>}
                             </p>
                           </div>
                         ) : "—"}
