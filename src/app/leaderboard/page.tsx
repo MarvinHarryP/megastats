@@ -278,6 +278,7 @@ export default async function LeaderboardPage({
                       <div>
                         <p className="text-xs text-muted-foreground">Terminal Points</p>
                         <p className="font-bold text-lg">{formatPoints(e.totalPoints)}</p>
+                        <p className="text-xs text-muted-foreground">~${(e.totalPoints * 0.20).toLocaleString("en-US", { maximumFractionDigits: 0 })} USDM</p>
                         {e.weeklyPoints > 0 && (
                           <p className="text-xs text-green-500 font-medium">
                             +{formatPoints(e.weeklyPoints)} this week
@@ -317,6 +318,7 @@ export default async function LeaderboardPage({
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-12">Rank</th>
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Wallet</th>
                   <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Points</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-muted-foreground hidden sm:table-cell">~USDM</th>
                   <th className="text-right px-4 py-2.5 font-medium text-muted-foreground hidden sm:table-cell">Weekly Δ</th>
                   <th className="text-right px-4 py-2.5 font-medium text-muted-foreground hidden md:table-cell">Txs</th>
                   <th className="text-right px-4 py-2.5 font-medium text-muted-foreground hidden lg:table-cell">Volume</th>
@@ -354,6 +356,9 @@ export default async function LeaderboardPage({
                         </div>
                       </td>
                       <td className="px-4 py-3 text-right font-semibold">{formatPoints(e.totalPoints)}</td>
+                      <td className="px-4 py-3 text-right hidden sm:table-cell">
+                        <span className="text-xs text-muted-foreground">~${(e.totalPoints * 0.20).toLocaleString("en-US", { maximumFractionDigits: 0 })}</span>
+                      </td>
                       <td className="px-4 py-3 text-right hidden sm:table-cell">
                         {e.weeklyPoints > 0 ? (
                           <div>
