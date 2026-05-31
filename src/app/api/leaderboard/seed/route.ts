@@ -140,32 +140,24 @@ async function runSeed(secret: string | null, force = false) {
       return true;
     });
 
-    // Upsert in batches of 100
+    // Delete all existing entries first, then insert fresh — avoids stale entries from old seeds
+    await prisma.leaderboardEntry.deleteMany({
+      where: { isTracked: false },
+    });
+
+    // Insert in batches of 100
     const CHUNK = 100;
     for (let i = 0; i < unique.length; i += CHUNK) {
-      await Promise.all(
-        unique.slice(i, i + CHUNK).map((e) => {
-          const key = e.address ?? `terminal:rank:${e.rank}`;
-          return prisma.leaderboardEntry.upsert({
-            where: { address: key },
-            update: {
-              displayName: e.displayName,
-              xAccount: e.xAccount,
-              totalPoints: e.totalPoints,
-              weeklyPoints: e.weeklyPoints,
-              rank: e.rank,
-            },
-            create: {
-              address: key,
-              displayName: e.displayName,
-              xAccount: e.xAccount,
-              totalPoints: e.totalPoints,
-              weeklyPoints: e.weeklyPoints,
-              rank: e.rank,
-            },
-          });
-        })
-      );
+      await prisma.leaderboardEntry.createMany({
+        data: unique.slice(i, i + CHUNK).map((e) => ({
+          address: e.address ?? `terminal:rank:${e.rank}`,
+          displayName: e.displayName,
+          xAccount: e.xAccount,
+          totalPoints: e.totalPoints,
+          weeklyPoints: e.weeklyPoints,
+          rank: e.rank,
+        })),
+      });
     }
 
     const withAddress = unique.filter((e) => e.address).length;
