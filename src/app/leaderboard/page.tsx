@@ -117,11 +117,25 @@ export default async function LeaderboardPage({
   // Only mark as tracked if user explicitly clicked Track — not just from a page visit
   const trackedSet = new Set(sorted.filter((e) => e.isTracked && !e.address.startsWith("terminal:")).map((e) => e.address));
 
-  const [totalCount, totalPointsAgg] = await Promise.all([
+  const [totalCount, totalPointsAgg, top100Agg] = await Promise.all([
     prisma.leaderboardEntry.count(),
     prisma.leaderboardEntry.aggregate({ _sum: { totalPoints: true } }),
+    // Top 100 by totalPoints — sum their points
+    prisma.leaderboardEntry.findMany({
+      orderBy: { totalPoints: "desc" },
+      take: 100,
+      select: { totalPoints: true },
+    }),
   ]);
   const totalPointsDistributed = totalPointsAgg._sum.totalPoints ?? 0;
+  const top100Sum = top100Agg.reduce((s, e) => s + e.totalPoints, 0);
+  const top100Pct = totalPointsDistributed > 0 ? Math.round((top100Sum / totalPointsDistributed) * 100) : 0;
+  // Count wallets where weeklyPoints >= 75% of totalPoints (can't do this in Prisma directly, so fetch and filter)
+  const hotWalletsCountReal = await prisma.$queryRaw<[{ count: number }]>`
+    SELECT COUNT(*) as count FROM leaderboard_entry
+    WHERE weeklyPoints > 0 AND CAST(weeklyPoints AS REAL) / CAST(totalPoints AS REAL) >= 0.75
+  `;
+  const hotCount = Number(hotWalletsCountReal[0]?.count ?? 0);
   const filteredCount = q ? sorted.length : totalCount;
   const totalPages = q ? 1 : Math.ceil(totalCount / PAGE_SIZE);
   // When searching, skip the podium — show all results in table with real rank
@@ -138,6 +152,14 @@ export default async function LeaderboardPage({
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
           {totalCount.toLocaleString()} wallets · {formatPoints(totalPointsDistributed)} points distributed · Season 1
         </p>
+        <div className="flex flex-wrap justify-center gap-3 pt-1">
+          <span className="text-xs bg-muted/60 rounded-full px-3 py-1 text-muted-foreground">
+            🏦 Top 100 hold <span className="font-semibold text-foreground">{top100Pct}%</span> of all points
+          </span>
+          <span className="text-xs bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-full px-3 py-1 text-orange-700 dark:text-orange-400">
+            🔥 <span className="font-semibold">{hotCount}</span> wallets earned 75%+ of their points this week
+          </span>
+        </div>
       </div>
 
       {/* Sort tabs */}
