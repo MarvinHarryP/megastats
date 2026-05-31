@@ -117,9 +117,14 @@ export default async function LeaderboardPage({
   // Only mark as tracked if user explicitly clicked Track — not just from a page visit
   const trackedSet = new Set(sorted.filter((e) => e.isTracked && !e.address.startsWith("terminal:")).map((e) => e.address));
 
-  const [totalCount, totalPointsAgg] = await Promise.all([
+  const [totalCount, totalPointsAgg, topMovers] = await Promise.all([
     prisma.leaderboardEntry.count(),
     prisma.leaderboardEntry.aggregate({ _sum: { totalPoints: true } }),
+    prisma.leaderboardEntry.findMany({
+      orderBy: { weeklyPoints: "desc" },
+      take: 5,
+      where: { weeklyPoints: { gt: 0 } },
+    }),
   ]);
   const totalPointsDistributed = totalPointsAgg._sum.totalPoints ?? 0;
   const filteredCount = q ? sorted.length : totalCount;
@@ -139,6 +144,35 @@ export default async function LeaderboardPage({
           {totalCount.toLocaleString()} wallets · {formatPoints(totalPointsDistributed)} points distributed · Season 1
         </p>
       </div>
+
+      {/* 🔥 Biggest Movers */}
+      {!q && pageNum === 1 && (
+        <div className="rounded-xl border bg-card p-4 space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+            🔥 This Week&apos;s Biggest Movers
+          </p>
+          <div className="grid grid-cols-1 sm:grid-cols-5 gap-2">
+            {topMovers.map((e, i) => {
+              const label = e.xAccount ?? e.displayName;
+              const pct = Math.round((e.weeklyPoints / e.totalPoints) * 100);
+              const isNew = pct >= 50;
+              return (
+                <div key={e.address} className={`rounded-lg border p-3 space-y-1 ${isNew ? "border-orange-300 dark:border-orange-700 bg-orange-50/50 dark:bg-orange-900/10" : "bg-muted/20"}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground font-mono">#{i + 1}</span>
+                    {isNew && <span className="text-[10px] font-bold text-orange-500 uppercase tracking-wide">🆕 New</span>}
+                  </div>
+                  <p className="text-sm font-semibold truncate text-primary">
+                    {label ? `@${label}` : "—"}
+                  </p>
+                  <p className="text-xs font-bold text-green-500">+{formatPoints(e.weeklyPoints)}</p>
+                  <p className="text-xs text-muted-foreground">{pct}% of total</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Sort tabs */}
       <div className="flex gap-2 justify-center flex-wrap">
